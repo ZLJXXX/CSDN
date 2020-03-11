@@ -1,0 +1,54 @@
+二分查找(折半查找)
+定义：二分查找也称折半查找（Binary Search），它是一种效率较高的查找方法。在C语言顺序存储结构中可更加快捷，时间复杂度更小的查找方式。
+
+算法要求：
+1.必须采用顺序存储结构。
+2.必须按关键字大小有序排列。
+
+查找过程
+首先，假设表中元素是按升序排列，将表中间位置记录的关键字与查找关键字比较，如果两者相等，则查找成功；否则利用中间位置记录将表分成前、后两个子表，如果中间位置记录的关键字大于查找关键字，则进一步查找前一子表，否则进一步查找后一子表。重复以上过程，直到找到满足条件的记录，使查找成功，或直到子表不存在为止，此时查找不成功。
+举个栗子：
+
+//二分查找
+//找到返回元素下标，找不到返回负一
+#define _CRT_SECURE_NO_WARNINGS
+#include<stdio.h>
+#include<windows.h>
+int binarySearch(int a[], int key, int left, int right)
+{
+	//定义中间变量与要找元素作比较
+	
+	while (left <= right)
+	{	int mid = left + (right - left) / 2;
+		if (a[mid] == key)
+		{
+			return mid;
+		}
+		else if (a[mid] < key)
+		{
+			left = mid + 1;
+		}
+		else
+		{
+			right = mid - 1;
+		}
+	}
+	
+		return -1;	
+}
+int main()
+{
+	int a[100] = { 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12};
+	printf("%d\n", binarySearch(a,3,0,11));
+	system("pause");
+	return 0;
+}
+二分查找是一个简单的查找算法，我们梳理一下它的步骤
+用升序举例，如代码中的key = 3;
+第一步：将数组，key,left,right传入二分查找的函数中
+第二步：进行循环查找，当下标left>right时循环终止，数组中找不到key值。
+第三步：进入循环，middle和key比较，middle比他大，则只看middle左边部分，查找范围减半，重置其middle和right，反之相同。如图
+在这里插入图片描述
+在这里插入图片描述
+此时数组中middle位置的值和key值相同，则查找成功。
+fighting QAQ 最后发布于2020-03-11 14:31:35 
