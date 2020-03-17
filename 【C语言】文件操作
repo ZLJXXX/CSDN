@@ -1,0 +1,131 @@
+【C语言】文件操作
+原创fighting QAQ 最后发布于2020-03-17 12:59:01 阅读数 1  收藏
+编辑 展开
+C语言文件操作
+文件概念
+程序设计中文件有两种：程序文件、数据文件
+程序文件：
+包括源程序文件（后缀.c），目标文件（windows环境后缀为.obj），可执行程序(windows环境后缀为.exe)。
+数据文件
+文件内容不一定是程序，而是程序运行时读写的数据，也是本章讨论的重点。
+
+文件名
+文件的标识，方便用户识别和使用
+文件名的组成：文件路径+文件名主干+文件后缀
+例如：C:\\Desktop\bite.txt
+文件表示常被称为文件名
+
+文件指针
+每个被使用的文件都在内存中开辟了一个相应的文件信息区，用来存放文件的相关信息（如文件的名字，文件状态及文件当前的位置等）。这些信息是保存在一个结构体变量中的。该结构体类型是有系统声明的，取名FILE.
+
+struct _iobuf {
+        char *_ptr;
+        int   _cnt;
+        char *_base;
+        int   _flag;
+        int   _file;
+        int   _charbuf;
+        int   _bufsiz;
+        char *_tmpfname;
+        };
+typedef struct _iobuf FILE;
+1
+这是VS2013中，FlLE结构体的定义，我们一帮用FILE的指针来访问和维护结构体中的变量,例如：FILE* pf;
+
+文件的操作
+在程序中操作文件，在文件读写之前应该先打开文件，在文件使用结束后应该关闭文件。
+在编写程序的时候，在打开文件的同时，都会返回一个FILE*的指针变量指向该文件，也相当于建立了指针和文件
+的关系。
+ANSIC 规定使用fopen函数来打开文件，fclose来关闭文件。
+
+FILE * fopen ( const char * filename, const char * mode );  参数分别是文件名和打开方式
+int fclose ( FILE * stream ); 关闭其fopen对应的文件指针
+1
+2
+打开方式如下：
+
+“r”（只读） 为了输入数据，打开一个已经存在的文本文件 文件不存在出错
+“w”（只写） 为了输出数据，打开一个文本文件 文件不存在建立一个新的文件
+“a”（追加） 向文本文件尾添加数据 文件不存在出错
+“rb”（只读） 为了输入数据，打开一个二进制文件 文件不存在出错
+“wb”（只写） 为了输出数据，打开一个二进制文件 文件不存在建立一个新的文件
+“ab”（追加） 向一个二进制文件尾添加数据 文件不存在出错
+“r+”（读写） 为了读和写，打开一个文本文件 文件不存在出错
+“w+”（读写） 为了读和写，建议一个新的文件 文件不存在建立一个新的文件
+“a+”（读写） 打开一个文件，在文件尾进行读写 文件不存在建立一个新的文件
+“rb+”（读写） 为了读和写打开一个二进制文件 文件不存在出错
+“wb+”（读写）为了读和写，新建一个新的二进制文件 文件不存在建立一个新的文件
+“ab+”（读写） 打开一个二进制文件，在文件尾进行读和写 文件不存在建立一个新的文件
+文件顺序读写
+
+举例如下：
+以“w”只写的形式使用fputs输入流输入字符串
+
+#include<stdio.h> 
+int  main()
+{
+	FILE* pf = fopen("test.txt", "w");
+	if (pf != NULL)
+	{
+		fputs("Hello CSDN", pf);
+		fclose(pf);
+		pf = NULL;
+	}
+	return 0;
+}
+
+输入成功：
+
+文件的随机读写
+fseek
+根据文件指针的位置和偏移量定位指定文件
+
+int fseek (FILE* stream,long int offset,int origin);参数分别对应文件指针、偏移量、起始位置
+1
+第一个参数是文件指针
+代码如下：
+
+#include<stdio.h> 
+int  main()
+{
+	FILE* pf = fopen("test.txt", "wb");
+	if (pf != NULL)
+	{
+		fputs("Hello CSDN", pf);
+		fseek(pf,12, SEEK_SET);//SEEK_SET系统宏定义为0
+		fputs("zhou", pf);
+		fclose(pf);
+		pf = NULL;
+	}
+	return 0;
+}
+
+运行结果：
+
+ftell
+返回文件指针相对于起始位置的偏移量
+
+long int ftell ( FILE * stream );
+1
+举例：
+
+/* ftell example : getting size of a file */
+#include<stdio.h> 
+int  main()
+{
+	FILE* pf = fopen("test.txt", "rb");
+	long size;
+	if (pf == NULL)//指针为NULL则抛异常
+	{
+		perror("Error opening file");
+	}
+	fseek(pf, 0, SEEK_END);
+	size = ftell(pf);
+	fclose(pf);
+	pf = NULL;
+	printf("Size of test.txt: %d bytes.\n", size);
+	system("pause");
+	return 
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/104910008
