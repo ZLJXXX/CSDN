@@ -1,0 +1,66 @@
+【每日一题】倒置字符串
+原创fighting QAQ 最后发布于2020-03-19 15:44:15 阅读数 7  收藏
+编辑 展开
+倒置字符串
+题目描述
+将一句话的单词进行倒置，标点不倒置。比如 I like beijing. 经过函数后变为：beijing. like I
+输入描述:
+每个测试输入包含1个测试用例： I like beijing. 输入用例长度不超过100
+输出描述:
+依次输出倒置之后的字符串,以空格分割
+示例1
+输入
+
+I like beijing.
+
+输出
+
+beijing. like I
+
+题目分析
+此题题意很简单是一个字符串逆置的变形题，本题主要考察了对算法库和迭代器的使用，若自己手敲逆置函数过于繁琐，我们使用C++算法库里的reverse进行逆置
+解题思路
+1.字符串录入并整体逆置
+2.按空格再次逆置翻转成功
+
+#include<iostream>
+#include<algorithm>
+#include<string>
+using namespace std;
+int main()
+{
+	string s;
+    getline(cin,str);
+    reverse(s.begin(),s.end());
+    auto start = s.begin();
+    while(start != s.end())
+    {
+        auto end = start; 
+        while(*end != ' ' && end != s.end())
+        {
+            end++;
+        }
+        //走到空格处
+        reverse(s.begin(),s.end());
+        if(end != s.end())
+        {
+            start = end + 1;
+        }
+        else{
+            start = end;
+        }
+    }
+    cout << s <<endl;
+    return 0; 
+}
+
+30
+易错点：
+1.记住算法库文件#include<algorithm>
+2.输入字符串带空格，使用getline(cin，string);
+3.迭代器循环的控制，经过空格时，翻转，判断是否走完，然后来更新start的位置`
+
+点赞
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/104968622
