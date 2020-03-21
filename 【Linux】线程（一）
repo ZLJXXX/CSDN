@@ -1,0 +1,201 @@
+【Linux】线程（一）
+原创fighting QAQ 最后发布于2020-03-21 19:04:26 阅读数 2  收藏 原力计划
+编辑 展开
+【Linux】线程
+前提概要：
+竞争条件：多个执行流竞争执行
+函数的可重入和不可重入：
+函数的重入：多个执行流同时进入一个函数执行代码
+可重入：函数重入不会造成数据二义，或者逻辑混乱
+不可重入：函数重入可能造成数据二义，或者逻辑混乱
+关键点：是否对全局数据进行非原子安全操作（原子操作指不可被打断）
+SIGGHLD信号：子进程退出后操作系统给父进程发送通知信息 。这个信号默认处理方式，就是什么都不做，因此子进程退出后在不等待的情况下会成为僵尸进程，这个信号是一个非可靠信号，意味着有大量紫禁城同时退出的时候，可能会出现数据丢失。
+
+线程
+线程概念：
+Linux下的线程是一个轻量级进程，通过进程PCB描述实现的，并且同一个线程组中的线程共用同一块虚拟地址空间，因此Linux下的pcb相较于传统pcb更加轻量化。
+线程是CPU调度的基本单位/进程是系统资源分配的基本单位
+多进程/多线程 优缺点：
+多线程
+优点：
+1.线程间通信更加方便灵活
+2.线程的创建与销毁成本更低
+3.线程间的调度切换成本更低
+缺点：
+1.线程间缺乏访问控制，一些异常和系统调用对整个进程生效。
+多进程：
+稳定性和健壮性更高，适用于主进程安全性更高的场景（shell/服务器）
+多进程和多线程进行任务处理的优势在哪里？
+1.IO密集型程序（在程序中大量进行IO操作）（IO操作：IO等待+数据拷贝）
+2.CPU密集型程序（在程序中不断进行数据运算）
+
+线程控制
+线程创建：操作系统并没有给用户直接提供创建一个线程的接口，因此使用线程库（POSIX线程库）来进行线程控制，所以叫用户态线程。
+
+创建线程
+错误检查:
+传统的一些函数是，成功返回0，失败返回-1，并且对全局变量errno赋值以指示错误。
+pthreads函数出错时不会设置全局变量errno（而大部分其他POSIX函数会这样做）。而是将错误代码
+通过返回值返回
+功能：创建一个新的线程
+原型
+ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *
+(*start_routine)(void*), void *arg);
+参数
+ thread:返回线程ID
+ attr:设置线程的属性，attr为NULL表示使用默认属性
+ start_routine:是个函数地址，线程启动后要执行的函数
+ arg:传给线程启动函数的参数
+返回值：成功返回0；失败返回错误码
+pthreads同样也提供了线程内的errno变量，以支持其它使用errno的代码。对于pthreads函数的错
+误，建议通过返回值业判定，因为读取返回值要比读取线程内的errno变量的开销更小
+
+#include<stdio.h>
+#include<unistd.h>
+#include<stdlib.h>
+#include<pthread.h> 
+void *thr_start(void *arg)
+{
+	while(1){
+		printf("child thread------\n");
+		sleep(1); 
+	} 
+	return NULL; 
+ } 
+ int main()
+ {
+ 	pthread_t tid;
+	char *ptr = "this is thread\n";
+	int ret = pthread_create(&tid,NULL，thr_start,(void*)ptr);
+	while(1){
+	printf("main thread----\n");
+	sleep(1);
+	}
+	return 0;
+ }
+
+vi makefile
+
+运行截图：
+线程终止
+1.线程将自己的入口函数运行完毕return退出（main中的return退出是进程退出）
+2.void pthread_exit(void *retval)退出调用线程
+3.pthread_exit函数
+需要注意,pthread_exit或者return返回的指针所指向的内存单元必须是全局的或者是用malloc分配的,不能在线程
+函数的栈上分配,因为当其它线程得到这个返回指针时线程函数已经退出了。
+线程等待：
+前提：线程退出也不会完全释放资源，需要被其他线程的等待
+概念：等待一个指定线程退出，获取这个退出线程的返回值并回收资源
+
+功能：等待线程结束
+原型
+ int pthread_join(pthread_t thread, void **value_ptr);
+参数
+ thread:线程ID
+ value_ptr:它指向一个指针，后者指向线程的返回值
+返回值：成功返回0；失败返回错误码
+1
+2
+3
+4
+5
+6
+7
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+void *thread1( void *arg )
+{
+    printf("thread 1 returning ... \n");
+    int *p = (int*)malloc(sizeof(int));
+    *p = 1;
+    return (void*)p;
+比特科技
+}
+void *thread2( void *arg )
+{
+    printf("thread 2 exiting ...\n");
+    int *p = (int*)malloc(sizeof(int));
+    *p = 2;
+    pthread_exit((void*)p);
+}
+void *thread3( void *arg )
+{
+    while ( 1 ){ // 
+        printf("thread 3 is running ...\n");
+        sleep(1);
+   }
+    return NULL; }
+int main( void )
+{
+    pthread_t tid;
+    void *ret;
+    // thread 1 return
+    pthread_create(&tid, NULL, thread1, NULL);
+    pthread_join(tid, &ret);
+    printf("thread return, thread id %X, return code:%d\n", tid, *(int*)ret);
+    free(ret);
+    // thread 2 exit
+    pthread_create(&tid, NULL, thread2, NULL);
+    pthread_join(tid, &ret);
+    printf("thread return, thread id %X, return code:%d\n", tid, *(int*)ret);
+    free(ret);
+    
+    // thread 3 cancel by other
+    pthread_create(&tid, NULL, thread3, NULL);
+    sleep(3);
+    pthread_cancel(tid);
+    pthread_join(tid, &ret);
+    if ( ret ==  PTHREAD_CANCELED )
+        printf("thread return, thread id %X, return code:PTHREAD_CANCELED\n", tid);
+    else
+        printf("thread return, thread id %X, return code:NULL\n", tid);
+}
+运行结果：
+ [root@localhost linux]# ./a.out
+ thread 1 returning ... 
+ thread return, thread id 5AA79700, return code:1
+ thread 2 exiting ...
+ thread return, thread id 5AA79700, return code:2
+
+线程分离：
+默认情况下，新创建的线程是joinable的，线程退出后，需要对其进行pthread_join(等待）操作，否则无法释
+放资源，从而造成系统泄漏。
+被分离后处于detach属性的线程退出后，则会自动释放资源（无法被等待）
+可以是线程组内其他线程对目标线程进行分离，也可以是线程自己分离:
+joinable和分离是冲突的，一个线程不能既是joinable又是分离的。
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+void *thread_run( void * arg )
+{
+   pthread_detach(pthread_self());
+   printf("%s\n", (char*)arg);
+   return NULL;
+}
+int main( void )
+{
+   pthread_t tid;
+   if ( pthread_create(&tid, NULL, thread_run, "thread1 run...") != 0 ) {
+       printf("create thread error\n");
+       return 1;
+   }
+   int ret = 0;
+   sleep(1);//很重要，要让线程先分离，再等待
+   if ( pthread_join(tid, NULL ) == 0 ) {
+       printf("pthread wait success\n");
+       ret = 0;
+   } else {
+       printf("pthread wait failed\n");
+       ret = 1;
+          }
+   return ret;
+}
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/105011848
