@@ -1,0 +1,458 @@
+【数据结构】七大排序（二）
+原创fighting QAQ 最后发布于2020-03-24 12:53:34 阅读数 1  收藏 原力计划
+编辑 展开
+【数据结构】七大排序（二）
+前言：上篇主要讲了插入排序中的直接插入排序、希尔排序。选择排序中的直接选择排序、堆排序。今天主要复习交换排序中的冒泡排序和快速排序，归并排序。
+
+交换排序
+基本思想：所谓交换，就是根据序列中两个记录键值的比较结果来对换这两个记录在序列中的位置，交换排序的特点是：将键值较大的记录向序列的尾部移动，键值较小的记录向序列的前部移动。
+冒泡排序：
+冒泡排序较为简单的交互排序
+单趟循环：从第一个元素开始前后两个元素相比较，若较大元素在前则交换，单趟排序后最大值在末尾
+多躺排序：以及遍历，但遍历个数每次都要减一，因为每次遍历最大值已经找到，无需再排序。
+
+冒泡排序的特性总结：
+
+冒泡排序是一种非常容易理解的排序
+时间复杂度：O(N^2)
+空间复杂度：O(1)
+稳定性：稳定
+代码实现：
+void Bubblesort(int* a, int n)
+{
+	for (int j = n; j >=0 ; j--)//走多躺，每走一趟 其要便利的数组--;
+	{
+		//先走一趟 把最大的数找出来
+		for (int i = 1; i < j; ++i)
+		{
+			if (a[i - 1]>a[i])
+			{
+				Swap(&(a[i - 1]), &(a[i]));
+			}
+		}
+		n--;
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+快速排序（难点）
+快速排序是Hoare于1962年提出的一种二叉树结构的交换排序方法，其基本思想为：任取待排序元素序列中的某元素作为基准值，按照该排序码将待排序集合分割成两子序列，左子序列中所有元素均小于基准值，右子序列中所有元素均大于基准值，然后最左右子序列重复该过程，直到所有元素都排列在相应位置上为止。
+将区间按照基准值划分为左右两半部分的常见方式有：
+
+hoare版本（左右指针法）
+挖坑法
+前后指针版本
+这三种方法的实现通过递归实现。
+快速排序，对于基准值K的选取也至关重要，影响着快排算法的时间复杂度，我们首先来讲快速对于基准值K的选取（快排的优化算法)：
+三数取中法：很简单，比较其left，right，mid位置的值进行比较，取出中间大小位置的值作为基准值K值**(这里去的是值，而不是位置）**。
+//快排的优化算法：三数取中法
+int GetMinindex(int* a, int left, int right)
+{
+	int mid = left + (right - left) / 2;
+	if (a[left] < a[mid])
+	{
+		if (a[mid] < a[right])
+			return mid;
+		else if (a[left] > a[right])
+			return left;
+		else
+			return right;
+	}
+	else
+	{
+		if (a[mid]<a[left])
+			return mid;
+		else if (a[right]>a[left])
+			return right;
+		else
+			return left;
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+递归实现快排的三种方法
+1.左右指针法（交换）
+我们首先分析单趟排序的过程，其多躺排序通过递归实现，通过左右指针向中间基准值K遍历，将左边比K大的值和右边比K小进行交换
+【思路分析】
+单趟：
+1.三数取中，选择合适的基准值，用index下标保存。这里要注意当出现最坏情况时（反向有序），代码中值每次都要进行交换，所以我们交换index位置的值和right位置的值，防止出现最坏情况。此时基准值在right位置上，将其付给key,且标记基准值key的位置。
+2.循环遍历，左右指针向中循环查找，与基准值key比较，将左边比K大的值和右边比K小进行交换。
+3.单趟结束后，比基准值key大的在数组左侧，比基准值Key小的在数组右侧。
+4.循环结束后，Swap(&(a[left]), &(a[key_index]))选取新的基准值并返回。
+多躺：
+采用递归调用，其终止条件为if (left >= right) return;（元素个数奇数个相等遍历完成，偶数个则是left>rihgt完成），用key来接收新的基准值（单趟的返回值），多趟递归我们可以将其看成从key位置分割开的两个子数组（符合从大到小的递归思想），代码赋到博客末尾。
+2.挖坑法（覆盖）
+其整体也是用递归完成，大致流程和左右指针法相同，主要是单趟排序的思想区别。
+【思路分析】
+1.单趟排序第1步和前后指针法相同，但是其基准值key也起到了保存元素的功能（填坑用的）
+2.其主要在循环中通过循环遍历找到左边找到比基准值key大的元素，a[right] = a[left];,那么a[left]这个位置就是新的坑，然后在右边找比基准值小的，a[left] = a[right];则将a[left]这个坑填上 ，新的坑为a[right],循环进行。
+3.循环完，最后将第一步中保存好的key来填上最后一个坑。
+多躺：和前后指针一样，不在分析，代码赋在博客最后。
+3.前后指针法（前后指针交换）
+其主要通过cur和prev两个数组下标来排序，和前面两种方法稍有不同，他对基准值key的要求并不高，不用使用三数取中法来选取key值
+【思路分析】
+1.其基准值key直接选取，在数组末尾int key = a[right];，定义出前后指针cur和prev;
+2.cur循环进行查找cur找到比key小的数，找到则prev++，若不相等则交换。
+3。遍历完成，则prev位置前的数都小于key,此时cur走到了key值，交换cur和prev，通过prev来保存好key进行返回。
+多躺：和前后指针一样，不在分析。
+代码如下：
+sort.h
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<malloc.h>
+//快速排序
+void QuickSort1(int* a, int left,int right);//左右指针法
+void QuickSort2(int* a, int left, int right);//挖坑法
+void QuickSort3(int* a, int left, int right);//左右指针法
+void PrintSort(int* a, int n);
+void TestSort();
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+sort.c
+
+void Swap(int* a, int* b)
+{
+	int tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+//快排的优化算法：三数取中法
+int GetMinindex(int* a, int left, int right)
+{
+	int mid = left + (right - left) / 2;
+	if (a[left] < a[mid])
+	{
+		if (a[mid] < a[right])
+			return mid;
+		else if (a[left] > a[right])
+			return left;
+		else
+			return right;
+	}
+	else
+	{
+		if (a[mid]<a[left])
+			return mid;
+		else if (a[right]>a[left])
+			return right;
+		else
+			return left;
+
+	}
+}
+//快排左右指针法单趟排序
+int SingleSort1(int* a, int left, int right)
+{
+	int index = GetMinindex(a, left, right);
+	Swap(&(a[index]), &(a[right]));//将中间数的小标与最后一个元素交换，防止出现最坏情况；
+	int key = a[right];
+	int key_index = right;
+	while (left < right)
+	{
+		while (left < right && a[left] <= key)
+		{
+			++left;
+		}
+		while (left < right && a[right] >= key)
+		{
+			--right; 
+		}
+			Swap(&(a[left]), &(a[right]));	
+	}
+	Swap(&(a[left]), &(a[key_index]));
+	return left;
+}
+//挖坑法单趟排序
+int SingleSort2(int* a, int left, int right)
+{
+	int index = GetMinindex(a, left, right);
+	Swap(&(a[index]), &(a[right]));//将中间数的小标与最后一个元素交换，防止出现最坏情况；
+	int key = a[right];
+	while (left < right)
+	{
+		while (left < right && a[left] < key)
+		{
+			++left;
+		}
+		a[right] = a[left];
+		while (left < right && a[right] > key)
+		{
+			--right;
+		}
+		a[left] = a[right];
+	}
+	a[left] = key;
+	return left;
+}
+//前后指针法
+int SingleSort3(int* a, int left, int right)
+{
+	int key = a[right];
+	int cur = left;
+	int prev = left - 1;
+	while (cur < right)
+	{
+		//cur找key小的数，找到则prev也++，若不相等则交换
+		if (a[cur] < key && ++prev != cur)
+		{
+			Swap(&(a[cur]), &(a[prev]));
+		}
+		cur++;
+	}
+	++prev;
+	Swap(&(a[cur]), &(a[prev]));
+	return prev;
+}
+void QuickSort1(int* a, int left,int right)//左右指针法多躺采用递归调用
+{    if (left >= right)
+		return;                                                                         
+	int key = SingleSort1(a, left, right);
+	QuickSort1(a, left, key - 1);
+	QuickSort1(a, key + 1, right);
+}
+void QuickSort2(int* a, int left, int right)//挖坑法多趟递归调用
+{
+	if (left >= right)
+		return;
+	int key = SingleSort2(a, left, right);
+	QuickSort2(a, left, key - 1);
+	QuickSort2(a, key + 1, right);
+}
+void QuickSort3(int* a, int left, int right)//前后指针法
+{
+	if (left >= right)
+		return;
+	int key = SingleSort3(a, left, right);
+	QuickSort3(a, left, key - 1);
+	QuickSort3(a, key + 1, right);
+}
+void PrintSort(int* a, int n)
+{
+	for (int i = 0; i < n; i++)
+	{
+		printf("%d ", a[i]);
+	}
+	printf("\n");
+}
+void TestSort()
+{
+	int array[] = { 10, 3, 5, 7, 9, 2, 4, 6, 8, 1 };
+	int arraysize = sizeof(array) / sizeof(int);
+	//InsertSort(array, arraysize);
+	//ShellSort(array, arraysize);
+	//SelectSort(array, arraysize);
+	
+	//HeapSort(array, arraysize);
+	//Bubblesort(array, arraysize);
+	QuickSort1(array,0, arraysize - 1);
+	QuickSort2(array,0, arraysize - 1);
+	QuickSort3(array, 0, arraysize - 1);
+	PrintSort(array, arraysize);
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+test.c
+
+#define _CRT_SECURE_NO_WARNINGS
+#include"Sort.h"
+int main()
+{
+	TestSort();
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+七种排序完成代码在我GitHub上（点击查看）
+
+
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/105066179
