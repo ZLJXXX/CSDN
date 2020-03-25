@@ -1,0 +1,49 @@
+详谈 I/O 多路复用 poll
+原创famur 最后发布于2020-03-25 16:09:34 阅读数 4  收藏 原力计划
+展开
+一、基本知识
+poll的机制与select类似，与select在本质上没有多大差别，管理多个描述符也是进行轮询，根据描述符的状态进行处理，但是poll没有最大文件描述符数量的限制。poll和select同样存在一个缺点就是，包含大量文件描述符的数组被整体复制于用户态和内核的地址空间之间，而不论这些文件描述符是否就绪，它的开销随着文件描述符数量的增加而线性增大。
+
+二、函数
+#include <poll.h>
+int main(struct pollfd *fds, nfds_t nfds, int timeout)
+
+//pollfd结构
+struct pollfd{
+	int  fd;
+	short events;
+	short revents;
+};
+1
+2
+3
+4
+5
+6
+7
+8
+9
+参数说明
+fds是一个poll函数监听的结构列表，每一个元素中，包含了三部分内容：文件描述符、监听的事件集合，返回的事件集合。
+nfds表示fds数组的长度。
+timeout 表示poll 函数的超时间，单位是毫秒（ms）。
+events 和 revents的取值
+| 事件 |描述 |
+|POLLIN| 数据（包括普通数据和优先数据）可读 |
+| POLLRDNORM| 普通数据可读|
+| POLLRDBAND| 优先级带数据可读（Linux不支持）|
+| POLLPRI| 高优先级数据可读，比如TCP带外数据|
+| POLLOUT| 数据（包括普通数据和优先数据）可写|
+| POLLWRNORM| 普通数据可写|
+| POLLWRBAND| 优先级数据可写|
+| POLLRDHUP| TCP链接被对方关闭，或者对方关闭了写操作。|
+| POLLERR| 错误|
+| POLLHUP| 挂起|
+| POLLNVAL| 文件描述符没有打开|
+返回结果
+返回值小于0，表示出错。
+返回值等于0，表示poll函数等待超时。
+返回值大于0，表示poll由于监听的文件描述符就绪而返回。
+————————————————
+版权声明：本文为CSDN博主「famur」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/famur/article/details/105096936
