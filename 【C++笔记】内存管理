@@ -1,0 +1,162 @@
+【C++笔记】内存管理
+原创Locokkk 最后发布于2019-10-15 15:53:57 阅读数 17  收藏
+展开
+一.小试牛刀
+首先，我们先来看一段代码，下面的各变量都存在什么地方呢？它们的大小又分别是多少呢？
+
+int globalVar = 1;
+static int staticGlobalVar = 1;
+void Test()
+{
+   static int staticVar = 1;
+   int localVar = 1;
+   int arr1[10] = {1, 2, 3, 4};
+   char char2[] = "abcd";
+   char* pChar3 = "abcd";
+   int* ptr1 = (int*)malloc(sizeof (int)*4);
+   int* ptr2 = (int*)calloc(4, sizeof(int));
+   int* ptr3 = (int*)realloc(ptr2, sizeof(int)*4);
+   free (ptr1);
+   free (ptr3);
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+那么，在看了这幅图之后大家应该会清楚它们分别是在内存中的哪个部分了吧。
+
+
+【说明】
+
+1.栈（堆栈）-- 非静态局部变量/函数参数/返回值等等，栈是向下增长的。
+2. 堆-- 用于程序运行时动态内存分配，堆是可以上增长的。
+3. 数据段--存储全局数据和静态数据。
+4.代码段--可执行的代码/只读常量。
+
+二.C++内存管理方式
+C语言的内存管理方式在C++中同样适用，但C++也增加了新的内存管理方式，那就是：通过new和delete操作符进行动态内存管理。
+
+1.new和delete操作内置类型
+
+void Test(){
+	//动态申请一个int类型的空间
+	int* ptr1 = new int;
+	//动态申请一个int类型的空间，并初始化为10
+	int* ptr2 = new int(10);
+	//动态申请6个int类型的空间
+	int* ptr3 = new int[6];
+
+	delete ptr1;
+	delete ptr2;
+	delete[] ptr3;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+注意：申请和释放单个元素的空间，用new和delete操作符，申请和释放连续的空间，用new[ ]和delete[ ].
+
+2.new和delete操作自定义类型
+
+class Test
+{
+public:
+	Test()
+		:_a(0)
+	{
+		cout << "Test():" << this << endl;
+	}
+	~Test()
+	{
+		cout << "Test():" << this << endl;
+	}
+
+private:
+	int _a;
+};
+
+void Test2()
+{
+	// 申请单个Test类型的空间
+	Test* ptr3 = (Test*)malloc(sizeof(Test));
+	free(ptr3);
+	// 申请10个Test类型的空间
+	Test* ptr4 = (Test*)malloc(10 * sizeof(Test));
+	free (ptr4);
+}
+
+void Test2()
+{
+	// 申请单个Test类型的对象
+	Test* ptr5 = new Test;
+	delete ptr5;
+	// 申请10个Test类型的对象
+	Test* ptr6 = new Test[10];
+	delete[] ptr6;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+注意：在申请和释放自定义类型空间时，new会自动调用构造函数，delete会自动调用析构函数，而malloc和free则不会。
+
+3.operator new和operator delete函数
+
+new和delete是用户进行动态申请和释放内存时使用的操作符，而operator new和operator delete是系统提供的全局函数；
+new在底层调用operator new来申请空间，delete在底层调用operator delete来释放空间。
+operator new 实际也是通过malloc来申请空间的，如果malloc申请空间成功就直接返回，否则执行用户提供的空间不足应对措施，如果用户提供措施就继续申请，否则就抛异常。operator delete 最终是通过free来释放空间的。
+
+————————————————
+版权声明：本文为CSDN博主「Locokkk」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43345349/article/details/102564675
