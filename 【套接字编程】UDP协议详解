@@ -1,0 +1,185 @@
+【套接字编程】UDP协议详解
+原创fighting QAQ 最后发布于2020-04-04 18:01:38 阅读数 11  收藏 原力计划
+编辑 展开
+【套接字编程】UDP协议
+前言：
+传输层协议场景：通信中客户端与服务端进行交互
+客户端：主动发起请求的一端
+服务端：被动接受请求的一端
+传输层协议的分类与选择
+tcp协议/udp协议
+
+两种协议的区别（面试常考）
+tcp协议（传输控制协议）
+特点：面向连接，可靠传输，面向字节流
+常用于对安全可靠性要求高于对性能要求的程序。例如:文件传输
+udp协议（用户数据报协议）
+特点：无连接，不可靠，面向数据报
+常用于对实时性要求高于安全性要求的程序，例如：视屏
+TCP 和 UDP 对比：
+可靠传输 vs 不可靠传输
+有连接 vs 无连接
+字节流 vs 数据报
+
+由于tcp协议与udp协议，他们都要使用使用到套接字编程，所以我们先来认识一下socke套接字
+
+socket编程接口
+socket 常见API（参数多，较为复杂）
+
+创建 socket 文件描述符 (TCP/UDP, 客户端 + 服务器)
+int socket(int domain, int type, int protocol);
+domain：地址域，通信地址
+type：套接字类型（面向字节流tcp：SOCK_STREAM 面向数据报udp：SOCK_DGRAM）
+protocol:传输层所使用的协议---默认为0
+IPPROTO_TCP/IPROTO_UDP
+返回值：文件描述符--套接字操作句柄
+
+绑定端口号（绑定地址信息） (TCP/UDP, 服务器)      
+int bind(int sockfd, const struct sockaddr *address,
+         socklen_t address_len);
+sockfd:创建套接字所返回的描述符
+address：地址结构
+// 开始监听socket (TCP, 服务器)
+int listen(int socket, int backlog);
+// 接收请求 (TCP, 服务器)
+int accept(int socket, struct sockaddr* address,
+         socklen_t* address_len);
+// 建立连接 (TCP, 客户端)
+int connect(int sockfd, const struct sockaddr *addr,
+         socklen_t addrlen);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+sockaddr结构
+socket API是一层抽象的网络编程接口,适用于各种底层网络协议,如IPv4、IPv6,以及后面要讲的UNIX Domain Socket. 然而, 各种网络协议的地址格式不同
+
+IPv4和IPv6的地址格式定义在netinet/in.h中,IPv4地址用sockaddr_in结构体表示,包括16位地址类型, 16位端口号和32位IP地址.
+IPv4、IPv6地址类型分别定义为常数AF_INET、AF_INET6. 这样,只要取得某种sockaddr结构体的首地址,不需要知道具体是哪种类型的sockaddr结构体,就可以根据地址类型字段确定结构体中的内容.
+socket API可以都用struct sockaddr *类型表示, 在使用的时候需要强制转化成sockaddr_in; 这样的好
+处是程序的通用性, 可以接收IPv4, IPv6, 以及UNIX Domain Socket各种类型的sockaddr结构体指针做为
+参数;
+常用sockaddr_in
+
+虽然socket api的接口是sockaddr, 但是我们真正在基于IPv4编程时, 使用的数据结构是sockaddr_in; 这个结构里主要有三部分信息: 地址类型, 端口号, IP地址.
+in_addr结构
+
+这个东西不用记，会用就行
+数据发送和接收函数
+发送：
+
+ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
+                      const struct sockaddr *dest_addr, socklen_t addrlen);
+  sockfd:套接字描述符
+  data：要发送的数据
+  len:要发送的数据长度
+  flag:选项参数 0-默认阻塞发送，MSG_DONTWAIT-非阻塞
+  dest_addr：sockaddr_in  描述对端地址信息
+  addrlen:对端地址信息结构长度
+  返回值:>0--实际发送的数据长度
+        -1--错误
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+接收：
+
+ ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+                        struct sockaddr *src_addr, socklen_t *addrlen);
+  sockfd:套接字描述符
+  buf:从socket接收缓冲区中取出数据放到buf中
+  data：要接收的数据
+  len:要接收的数据长度
+  flag:选项参数 0-默认阻塞发送，MSG_DONTWAIT-非阻塞
+  src_addr：sockaddr_in  描述源地址信息
+  *addrlen:源地址信息结构长度
+  返回值:>0--实际接收的数据长度
+        -1--错误
+
+关闭套接字：
+
+int close(int fd);
+fd:文件描述符
+1
+2
+Socket通信流程
+1命名socket
+SOCK_STREAM 式本地套接字的通信双方均需要具有本地地址，其中服务器端的本地地址需要明确指定，指定方法是使用 struct sockaddr_un 类型的变量。
+2 绑定
+OCK_STREAM 式本地套接字的通信双方均需要具有本地地址，其中服务器端的本地地址需要明确指定，指定方法是使用 struct sockaddr_un 类型的变量，将相应字段赋值，再将其绑定在创建的服务器套接字上，绑定要使用 bind 系统调用。
+3 监听
+服务器端套接字创建完毕并赋予本地地址值（名称，本例中为Server Socket）后，需要进行监听，等待客户端连接并处理请求，监听使用 listen 系统调用，接受客户端连接使用accept系统调用。
+4 连接服务器
+客户端套接字创建完毕并赋予本地地址值后，需要连接到服务器端进行通信，让服务器端为其提供处理服务。对于SOCK_STREAM类型的流式套接字，需要客户端与服务器之间进行连接方可使用。
+5 相互发送接收数据
+无论客户端还是服务器，都要和对方进行数据上的交互，这种交互也正是我们进程通信的主题。一个进程扮演客户端的角色，另外一个进程扮演服务器的角色，两个进程之间相互发送接收数据，这就是基于本地套接字的进程通信。发送和接收数据要使用 write 和 read 系统调用。
+6 断开连接
+交互完成后，需要将连接断开以节省资源，使用close系统调用。
+
+udp网络编程
+在TCP/IP对网络的划分下传输层试很重要的一层，通过阅读《图解TCP/IP》对传输层的TCP/UDP进行总结。
+UDP
+1、UDP的特点
+UDP不提供复杂的控制机制，利用IP提供面向无连接的通信服务。并且它是将应用程序发出来的数据在收到的那一刻，立即按照原来发送到网络上的一种机制。（UDP无法进行流量控制等避免网络拥塞的行为；传输丢包UDP不负责重发；包到达顺序乱掉时没有纠正的功能）
+
+2、UDP应用场景
+1、包总量较少的通信（DNS、SNMP等）
+2、视频、音频等多媒体通信（即时通信）
+3、限定于LAN等特定网络中的应用通信
+4、广播通信（广播、多播）
+
+3、UDP首部的格式
+除去数据的部分正是UDP的首部。UDP首部由源端口号，目标端口号，包长和校验和组成。
+
+1、源端口号（Source Port）
+表示发送端端口号，字段长16位。该字段是可选项，有时可能不会设置源端口号。没有源端口号的时候该字段的值设置为0.可用于不需要返回的通信中。
+2、目标端口号（Destination Port）
+表示接收端端口，字段长度16位。
+3、包长度（Length）
+该字段保存了UDP首部的长度之和。单位为字节(8位字节）。
+4、校验和（Checksum）
+校验和是为了提供可靠的UDP首部和数据而设计。在计算校验和时，附加在UDP伪首部与UDP数据报之前。通过在最后一位增加一个“0”将全长增加16倍。此时将UDP首部的校验和字段设置为“0”.然后以16比特为单位进行1的补码和，并将所得到的1的补码和写入校验和字段。
+
+UDP实现流程：
+客户端
+1.创建套接字
+2.为套接字绑定地址信息
+3.发送数据请求
+4.服务端处理后，响应请求
+5.关闭套接字
+服务端：
+1.创建套接字
+2.为套接字绑定地址信息
+3.接收数据请求
+4.处理后，发送数据
+5.关闭套接字
+
+流程如下图：
+
+TCP网络编程
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/105311537
