@@ -1,0 +1,106 @@
+详述Linux下安装mysql及密码设置修改（新手必备）
+原创fighting QAQ 最后发布于2020-04-09 17:30:22 阅读数 28  收藏 原力计划
+编辑 展开
+Linux下安装mysql及密码设置修改
+本篇目录
+Linux下安装mysql及密码设置修改
+1.Linux下安装过程：
+1.1切换root用户进行操作
+1.2安装
+1.3更改配置
+2.密码设置或修改
+1.Linux下安装过程：
+1.1切换root用户进行操作
+以下操作都以 root 用户进行操作
+以下操作都以 root 用户进行操作
+以下操作都以 root 用户进行操作
+重要的事情说三遍
+
+1.2安装
+安装 mariadb 服务
+
+ # yum install -y mariadb-server
+1
+安装 mariadb 命令行客户端
+
+ # yum install -y mariadb
+1
+安装 mariadb C library
+
+# yum install -y mariadb-libs
+1
+安装 mariadb 开发包
+
+# yum install -y mariadb-devel
+1
+无脑安装就行
+
+1.3更改配置
+1.进入 cd /etc/my.cnf.d目录
+
+2.vi mysql-clients.cnf进入client.cnf文件
+[client] 下加一行配置 default-character-set=utf8,t_70)
+
+3.vi mysql-clients.cnf进入mysql-clients.cnf 文件
+[mysql] 下加一行配置 default-character-set=utf8
+
+4…vi server.cnf进入server.cnf 文件
+[mysqld] 下加配置
+
+collation-server = utf8_general_ci
+
+init-connect=‘SET NAMES utf8’
+
+character-set-server = utf8
+
+sql-mode = TRADITIONAL
+
+启动
+启动服务
+
+# systemctl start mariadb
+1
+设置服务开启自启动
+
+# systemctl enable mariadb
+1
+测试连接
+使用命令行客户端尝试连接
+
+# mysql -u root
+1
+
+查看 mariadb 版本号select version();
+
+查看字符集配置`show variables like ‘%char%’;
+
+
+2.密码设置或修改
+1.进入/etc/my.cnf文件夹
+
+cd  /etc
+1
+2.在/etc/my.cnf中加入如下内容：
+
+vim my.cnf
+1
+3.在[mysqld]下添加skip-grant-tables，然后保存并退出
+
+.4.进入mysql # mysql -u root
+5…输入use mysql语句，进行操作
+
+这个是mysql的核心数据库，类似于sql server中的master表，主要负责存储数据库的用户、权限设置、关键字等mysql自己需要使用的控制和管理信息。
+6.输入语句，设置或修改密码（太长了，我就不打了，看图）
+
+输入成功则会显示
+
+然后保存信息flush privileges;
+保存退出quit
+
+密码设置成功。
+重新进入MySQL
+
+-u:用户名
+-p:使用密码
+成功进入：
+
