@@ -1,0 +1,254 @@
+【MySQL】表的增删查改
+原创fighting QAQ 最后发布于2020-04-10 19:01:23 阅读数 0  收藏
+编辑 展开
+表的增删查改
+本章目录
+表的增删查改
+新增
+1.1 单行数据 + 全列插入
+1.2 多行数据 + 指定列插入
+2.查询
+2.1 全列查询
+2.2指定列查询
+2.3别名
+2.4去重：DISTINCT
+2.5排序：ORDER BY
+2.6条件查询：WHERE
+3.修改（Update）
+4.删除（Delete）
+新增
+语法：
+
+INSERT [INTO] table_name
+ [(column [, column] ...)] VALUES (value_list) [, (value_list)] ...
+ value_list: value, [, value] ...
+1
+2
+3
+案例：
+– 创建一张学生表
+
+CREATE TABLE student (
+   id INT,
+   sn INT comment '学号',
+   name VARCHAR(20) comment '姓名',
+   qq_mail VARCHAR(20) comment 'QQ邮箱'
+);
+1
+2
+3
+4
+5
+6
+1.1 单行数据 + 全列插入
+INSERT INTO student VALUES (100, 10000, '唐三藏', NULL);
+1
+
+
+1.2 多行数据 + 指定列插入
+插入两条记录，value_list 数量必须和指定列数量及顺序一致
+INSERT INTO student (id, sn, name) VALUES
+ (102, 20001, '曹孟德'),
+ (103, 20002, '孙仲谋');
+1
+2
+3
+4
+
+
+2.查询
+语法：
+
+SELECT
+ [DISTINCT] {* | {column [, column] ...}
+ [FROM table_name]
+ [WHERE ...]
+ [ORDER BY column [ASC | DESC], ...]
+ LIMIT ...
+1
+2
+3
+4
+5
+6
+举例：
+
+2.1 全列查询
+语法：
+
+select * from 表名(student);
+1
+
+
+2.2指定列查询
+
+
+2.3别名
+语法：
+
+SELECT column [AS] alias_name [...] FROM table_name
+1
+举例：
+
+DROP TABLE IF EXISTS exam_result;
+CREATE TABLE exam_result (
+ id INT,
+ name VARCHAR(20),
+ chinese DECIMAL(3,1),
+ math DECIMAL(3,1),
+ english DECIMAL(3,1)
+);
+INSERT INTO exam_result (id,name, chinese, math, english) VALUES
+    ->  (1,'唐三藏', 67, 98, 56),
+    ->  (2,'孙悟空', 87.5, 78, 77),
+    ->  (3,'猪悟能', 88, 98.5, 90),
+    ->  (4,'曹孟德', 82, 84, 67),
+    ->  (5,'刘玄德', 55.5, 85, 45),
+    ->  (6,'孙权', 70, 73, 78.5),
+    ->  (7,'宋公明', 75, 65, 30);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+结果集中，表头的列名=别名
+
+select id,name,chinese + math +english from exam_result;
+1
+
+
+2.4去重：DISTINCT
+举例：
+
+SELECT math FROM exam_result;
+1
+
+去重：
+
+select distinct math from exam_result;
+1
+
+
+2.5排序：ORDER BY
+语法：
+
+-- ASC 为升序（从小到大）
+-- DESC 为降序（从大到小）
+-- 默认为 ASC
+SELECT ... FROM table_name [WHERE ...]
+ ORDER BY column [ASC|DESC], [...];
+1
+2
+3
+4
+5
+没有 ORDER BY 子句的查询，返回的顺序是未定义的，永远不要依赖这个顺序
+NULL 数据排序，视为比任何值都小，升序出现在最上面，降序出现在最下面
+查询ID和姓名，按ID进行排序
+select id,name from student order by id;
+1
+2
+
+
+2.6条件查询：WHERE
+比较运算符
+
+注：
+
+WHERE条件可以使用表达式，但不能使用别名。
+AND的优先级高于OR，在同时使用时，需要使用小括号()包裹优先执行的部分
+案例：
+基本查询：
+-- 查询英语不及格的同学及英语成绩 ( < 60 )
+SELECT name, english FROM exam_result WHERE english < 60;
+1
+2
+
+– 查询语文成绩好于英语成绩的同学
+
+SELECT name, chinese, english FROM exam_result WHERE chinese > english;
+1
+
+– 查询总分在 200 分以下的同学
+
+SELECT name, chinese + math + english 总分 FROM exam_result
+ WHERE chinese + math + english < 200
+1
+2
+
+AND与OR：
+– 查询语文成绩大于80分，且英语成绩大于80分的同学
+
+SELECT * FROM exam_result WHERE chinese > 80 and english > 80;
+1
+
+范围查询：
+1.BETWEEN…AND…
+
+select * from exam_result where chinese between 60 and 90;
+1
+注意范围只能从小到大
+
+2.IN
+
+-- 查询数学成绩是 58 或者 59 或者 98 或者 99 分的同学及数学成绩
+SELECT name, math FROM exam_result WHERE math IN (58, 59, 98, 99);
+1
+2
+
+模拟查询：LIKE
+
+select id,name from exam_result where name like '孙%';
+1
+
+– _ 匹配严格的一个任意字符
+
+select id,name from exam_result where name like '孙_';
+1
+
+
+3.修改（Update）
+语法：
+
+UPDATE table_name SET column = expr [, column = expr ...]
+ [WHERE ...] [ORDER BY ...] [LIMIT ...]
+1
+2
+案例：
+– 将孙悟空同学的数学成绩变更为 80 分
+
+UPDATE exam_result SET math = 80 WHERE name = '孙悟空';
+1
+
+– 将曹孟德同学的数学成绩变更为 60 分，语文成绩变更为 70 分
+
+UPDATE exam_result SET math = 60, chinese = 70 WHERE name = '曹孟德';
+1
+
+
+4.删除（Delete）
+语法：
+
+DELETE FROM  table_name [WHERE ...] [ORDER BY ...] [LIMIT ...]
+1
+– 删除猪悟能同学的考试成绩
+
+delete from exam_result where name = '猪悟能';
+1
+
+
+点赞
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/105436772
