@@ -1,0 +1,135 @@
+【MySQL】数据库与表的操作
+原创fighting QAQ 最后发布于2020-04-10 13:57:31 阅读数 0  收藏
+编辑 展开
+【MySQL】数据库与表的操作
+本章目录
+【MySQL】数据库与表的操作
+1.数据库操作
+1.1显示当前数据库
+1.2创建数据库
+1.3删除数据库
+1.4使用数据库
+2.表的操作
+2.1创建数据表
+2.2查看表单信息
+2.3删除表
+1.数据库操作
+进入数据库
+
+mysql -u root -p
+1
+1.1显示当前数据库
+SHOW DATABASES;
+1
+
+
+1.2创建数据库
+语法规则
+
+CREATE DATABASE [IF NOT EXISTS] db_name [create_specification [,create_specification] ...]
+描述信息
+create_specification:
+ [DEFAULT] CHARACTER SET charset_name
+ [DEFAULT] COLLATE collation_name
+1
+2
+3
+4
+5
+说明：
+大写示关键字
+[] 是可选项
+CHARACTER SET: 指定数据库采用的字符集
+COLLATE: 指定数据库字符集的硝烟
+举例：
+创建名为goods的数据库
+
+CREATE DATABASE goods;
+1
+说明：当我们创建数据库没有指定字符集和校验规则时，系统使用默认字符集：utf8，校验规则则是：utf8_ general_ ci
+如果系统没有 goods 的数据库，则创建一个名叫 goods 的数据库，如果有则不创建
+
+CREATE DATABASE IF NOT EXISTS goods;
+1
+
+如果系统没有 goods 的数据库，则创建一个使用utf8mb4字符集的 goods 数据库，如果有则不创建（了解就行，一般系统默认生成）
+
+CREATE DATABASE IF NOT EXISTS db_test CHARACTER SET utf8mb4;
+1
+1.3删除数据库
+语法
+
+DROP DATABASE [IF EXISTS] db_name;
+1
+说明：数据库删除以后，内部看不到对应的数据库，里边的表和数据全部被删除
+
+
+1.4使用数据库
+语法：
+
+use 数据库名;
+1
+
+
+2.表的操作
+需要操作数据库中的表时，需要使用该数据库
+常见的数据类型：
+INT：整型
+DECIMAL(M, D)：浮点数类型
+VARCHAR(SIZE)：字符串类型
+TIMESTAMP：日期类型
+text:长文本数据
+
+2.1创建数据表
+语法
+
+CREATE TABLE table_name (
+ field1 datatype,
+ field2 datatype,
+ field3 datatype
+);
+1
+2
+3
+4
+5
+可以使用comment增加字段说明
+示例：
+在students库里添加一个stu学生信息表
+
+create table stu(
+id int,
+name varchar(20) comment '姓名',
+sex verchar(8),
+birthday timestamp
+);
+1
+2
+3
+4
+5
+6
+2.2查看表单信息
+语句：
+
+desc + ‘表名’;
+1
+
+
+
+2.3删除表
+语法
+
+DROP TABLE[IF EXISTS] tbl_name [, tbl_name] ...
+1
+示例：
+– 删除 stu_test 表
+
+drop table stu_test;
+1
+– 如果存在 stu_test 表，则删除 stu_test 表
+
+drop table if exists stu_test
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/105427756
