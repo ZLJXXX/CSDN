@@ -1,0 +1,302 @@
+【C++】特殊类的设计
+原创fighting QAQ 最后发布于2020-04-11 15:05:41 阅读数 0  收藏
+编辑 展开
+特殊类的设计及单例模式（面试高频）
+本篇目录
+特殊类的设计及单例模式（面试高频）
+1.掌握特殊类的设计
+1.1请设计一个类，只在堆上创建
+1.2 请设计一个类，只能在栈上创建对象
+1.3请设计一个类，不能被继承
+1.掌握特殊类的设计
+一个类它可以在栈，堆，数据段上调用
+举例：
+
+#define _CRT_SECURE_NO_WARNINGS
+#include<iostream>
+using namespace std;
+class ordinary{
+public:
+	ordinary()
+	{
+		cout << "ordinary" << endl;
+	}
+};
+int main(){
+	ordinary hp1;				// 栈
+	static ordinary hp2;		// 数据段(静态区)
+	ordinary* p = new ordinary; // 堆
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+
+他们都能调用这个类创建对象。
+怎么将其设置成特殊类呢？
+
+1.1请设计一个类，只在堆上创建
+实现步骤：
+1… 提供一个静态的成员函数，在该静态成员函数中完成堆对象的创建，首先将构造函数私有化，只有类里面的元素才能访问
+
+class HeapOnly
+{
+public:
+	static HeapOnly* GetHeapObj()
+	{
+		HeapOnly* p = new HeapOnly;
+		return p;
+	}
+
+private:
+	HeapOnly()
+	{
+		cout << "HeapOnly()" << endl;
+	}
+};
+int main()
+{
+	//HeapOnly hp1;				// 栈
+	//static HeapOnly hp2;		// 数据段(静态区)
+	HeapOnly* p = HeapOnly::GetHeapObj(); // 堆
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+栈和数据段则无法访问类的构造函数，而堆可以
+
+但是还有问题，定义对象，可以通过栈和数据段的拷贝构造来访问类
+
+int main()
+{
+	//HeapOnly hp1;				// 栈
+	//static HeapOnly hp2;		// 数据段(静态区)
+	HeapOnly* p = HeapOnly::GetHeapObj(); // 堆
+	HeapOnly copy1(*p); //栈拷贝构造
+	static HeapOnly copy(*p); //数据段拷贝构造
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+2.所以我们要封掉类中默认生成的拷贝构造函数，方法就是让其私有化（c++98和c++11两种方法）
+
+总结：
+1. 将类的构造函数私有，拷贝构造声明成私有。防止别人调用拷贝在栈上生成对象。
+2. 提供一个静态的成员函数，在该静态成员函数中完成堆对象的创建
+代码实现
+
+// 只能在堆上
+class HeapOnly
+{
+public:
+	static HeapOnly* GetHeapObj()
+	{
+		HeapOnly* p = new HeapOnly;
+		return p;
+	}
+
+private:
+	HeapOnly()
+	{
+		cout << "HeapOnly()" << endl;
+	}
+	//拷贝构造私有化
+	//C++98：只声明，不定义
+	//HeapOnly(const HeapOnly&);
+	//C++11
+	HeapOnly(const HeapOnly&) = delete;//删掉拷贝构造
+};
+int main()
+{
+	//HeapOnly hp1;				// 栈
+	//static HeapOnly hp2;		// 数据段(静态区)
+	HeapOnly* p = HeapOnly::GetHeapObj(); // 堆
+	//HeapOnly copy1(*p); //栈拷贝构造
+	//static HeapOnly copy(*p); //数据段拷贝构造
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+1.2 请设计一个类，只能在栈上创建对象
+首先要在栈上存放的是局部变量，函数参数和返回值，要在栈上创建类函数则必须要使用到拷贝构造函数，所以我们不能将拷贝构造函数私有化，所以我们只能做到不能在堆上创建，但是数据段创建无法处理。
+方法一：和上边思想一样，私有化构造函数
+
+class StackOnly
+{
+public:
+ static StackOnly CreateObject()
+ {
+ return StackOnly();
+ }
+private:
+ StackOnly() {}
+};
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+方法二：屏蔽new
+因为new在底层调用void* operator new(size_t size)函数，只需将该函数屏蔽掉即可。
+注意：也要防止定位new
+
+class StackOnly
+{
+public:
+ StackOnly() {}
+private:
+ void* operator new(size_t size);
+ void operator delete(void* p);
+}; 
+int main()
+{
+	StackOnly so = StackOnly::CreateObject();
+	//static StackOnly so1(so);
+	//StackOnly* p2 = new StackOnly; // operator new + 构造函数
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+1.3请设计一个类，不能被继承
+方法一：
+c++98：
+1.派生类构造函数必须调用基类构造函数
+2.基类私有成员在派生类中不可见
+私有化基类的构造函数
+
+class NonInherit
+{
+public:
+	static NonInherit GetInstance()
+	{
+		return NonInherit();
+	}
+private:
+	NonInherit()
+	{}
+};
+class Inherit : public NonInherit  // 借助子类构造函数来设定
+{};
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+注意初始化派生类时，编译器不会报错，而是运行时调用构造函数报错。
+
+方法二：
+C++11方法
+final关键字，final修饰类，表示该类不能被继承。
+最终类不能被继承
+
+class A final
+{
+ // ....
+};
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/105451907
