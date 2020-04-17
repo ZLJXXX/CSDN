@@ -1,0 +1,77 @@
+# 【剑指offer】替换空格
+[【本题链接】](https://www.nowcoder.com/practice/4060ac7e3e404ad1a894ef3e17650423?tpId=13&tqId=11155&tPage=1&rp=1&ru=/ta/coding-interviews&qru=/ta/coding-interviews/question-ranking)
+【题目描述】
+
+> 请实现一个函数，将一个字符串中的每个空格替换成“%20”。例如，当字符串为We Are
+> Happy.则经过替换之后的字符串为We%20Are%20Happy。
+
+【本题解析】
+这道题题意很明确，就是考察字符串操作的题，有多种解法，我主要说两种解法。
+**【解题方法】**
+方法一：**O(n2)的解法**
+常规方法，要在空格处添加一个“%20”,则需要将后面的字符串后移，否则，就会覆盖后面的字符，导致输出错误。
+【具体实现】
+1.通过计算原字符串长度，和空格个数，我们可以得到新字符串的长度（新增数据长度,为空格长度加2，多个则是空格个数的2倍关系）即` newlength = oldlength + count * 2;`
+2.若字符串对应位置不是空格，则往后挪；是空格则进行“%20”的插入
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200417112308607.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQzNjc2NzU3,size_16,color_FFFFFF,t_70)
+```c
+class Solution {
+public:
+	void replaceSpace(char *str,int length) {
+        if(str == NULL || length <=0)
+            return;
+        int oldlength = 0;//原字符串长度
+        int newlength = 0;//新字符串长度
+        int count = 0;//计算空格个数
+        int i = 0; 
+        while(str[i]!='\0')
+        {
+            oldlength++;
+            if(str[i]==' ')
+                count++;
+            i++;
+        }
+        newlength = oldlength + count * 2;
+        for(int j = oldlength;j >= 0;j--)
+        {
+            if(str[j]!= ' ')
+            {
+                /*str[newlength] = str[j];
+                newlength--;*/
+                str[newlength--] = str[j];
+            }
+            else{
+                str[newlength--] = '0';
+                str[newlength--] = '2';
+                str[newlength--] = '%';
+            }
+        }
+    }
+};
+```
+方法二：**O(n)的解法**
+【具体实现】上面的方法要进行数据的挪移，时间复杂度高且效率低，我们可以使用**C++中的string类中的`+=`操作**来完成此题，十分简单。
+1.遍历这个字符串，若不是空格，则将字符`+=`到字符串中
+2.若空格，则直接`+= "%20"`;
+3.本题要求返回空值，所以我们不能将string类的字符串返回，将string类转成C语言识别的字符串，使用`_str.c_str()`，然后拷贝到原字符串中即可。
+
+```c
+class Solution {
+public:
+	void replaceSpace(char *str,int length) {
+        string _str;
+        for(int i = 0;i <= strlen(str);i++)
+        {
+            if(str[i] != ' ')
+                _str += str[i];
+            else{
+                _str += "%20";
+            }
+        }
+        strcpy(str,_str.c_str());
+	}
+};
+```
+【总结】
+1.方法一更容易想到，逻辑简单，但要控制数据的挪移代码量稍大且效率低。
+2.方法二巧妙使用到C++中`string类的+=操作`，可以完成对单一字符和字符串的添加，只用调用接口较为简单，且效率高。但要注意最后返回值是`void`，我们需要将string类型的字符串，转化成C语言中能识别的字符串`_str.c_str()`，拷贝到原字符串即可。
