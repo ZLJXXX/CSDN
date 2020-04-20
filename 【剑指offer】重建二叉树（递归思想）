@@ -1,0 +1,86 @@
+【剑指offer】重建二叉树（递归思想）
+ fighting QAQ 最后发布于2020-04-20 12:23:03 阅读数 1  收藏
+编辑 展开
+【剑指offer】重建二叉树（递归思想）
+【本题链接】
+【题目描述】
+
+输入某二叉树的前序遍历和中序遍历的结果，请重建出该二叉树。假设输入的前序遍历和中序遍历的结果中都不含重复的数字。例如输入前序遍历序列{1,2,4,7,3,5,6,8}和中序遍历序列{4,7,2,1,5,3,8,6}，则重建二叉树并返回。
+
+【题目分析】
+本题主要是对二叉树性质的考察，是否能理解到三种遍历之间的关系是解决此题的关键。
+【解题思路】
+
+发现规律：
+1.1前序遍历，其遍历顺序为根左右，则其前序遍历数组中的第一个元素一定是根。
+1.2.中序遍历，其遍历顺序为左根右，前序遍历中已经找到了根节点的值，我们则可以再中序遍历的数组中找到其根节点的位置，根节点位置的左边为左子树，根节点位置的右边为右子树。
+
+这便是我们使用递归解决此问题的关键，我们使用数组将其左子树的前序遍历和中序遍历的值保存，t同理保存右子树的值，要是用的多个数组，此时命名风格就很重要，否则会懵逼。
+
+当左右子树都走到空时，遍历结束。
+
+【代码实现】
+
+/**
+ * Definition for binary tree
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* reConstructBinaryTree(vector<int> pre,vector<int> vin) {
+        vector<int> left_pre,left_vin,right_pre,right_vin;
+        if(pre.size() == 0 || vin.size() == 0)
+            return nullptr;
+        TreeNode* root=new TreeNode(pre[0]);
+        int vinroot_index = 0;
+        for(int i = 0;i < vin.size();i++)
+        {
+            if(pre[0] == vin[i])
+            {
+                vinroot_index = i;
+                break;
+            }
+        }
+        /*for(int i = 0;i < vinroot_index;i++)
+        {
+               left_vin.push_back(vin[i]);
+               left_pre.push_back(pre[i + 1]);
+        }
+        for(int i =  vinroot_index + 1;i < vin.size();i++)
+        {
+              right_vin.push_back(vin[i]);
+              right_pre.push_back(pre[i]);
+        }*/
+        for(int i = 0;i < vin.size();i++)
+        {
+            if(i < vinroot_index)
+            {
+                left_vin.push_back(vin[i]);
+                left_pre.push_back(pre[i + 1]);
+            }
+           if(i> vinroot_index &&  i < vin.size())
+           {
+               right_vin.push_back(vin[i]);
+               right_pre.push_back(pre[i]);
+           }
+        }
+        root->left = reConstructBinaryTree(left_pre,left_vin);
+        root->right = reConstructBinaryTree(right_pre,right_vin);
+        return root;
+    }
+};
+
+
+
+【本题总结】
+1.本题主要考察了二叉树遍历方式的理解和联系。
+2.巧妙使用递归解决二叉树的问题。
+3.由于要保存左右子树所对应的前序数组和中序数组，多个数组使用时，一定要注意自己数组的命名风格，否则可能会懵逼。
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/105631921
