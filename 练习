@@ -1,0 +1,39 @@
+#include<iostream>
+using namespace std;
+int main()
+{
+	double power[6];
+	double insertPower;
+	int powerCount = 0;
+	power[powerCount++] = 45771;
+	power[powerCount++] = 42322;
+	power[powerCount++] = 40907;
+	power[powerCount++] = 40706;
+	cout << "请输入要插入的数字：";
+	cin >> insertPower;
+	for (int i = powerCount; i >= 0; i--)
+	{
+		if (insertPower<power[powerCount-1])
+		{
+			power[powerCount] = insertPower;
+			break;
+		}
+		else
+		{
+			power[i + 1] = power[i];
+			if (insertPower <= power[i])
+			{
+				power[i + 1] = insertPower;
+				break;
+			}
+		}
+	}
+	powerCount++;
+	for (int i = 0; i<powerCount; i++)
+	{
+		cout << power[i] << "\t";
+	}
+	cout << endl;
+	system("pause");
+	return 0;
+}
