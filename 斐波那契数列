@@ -1,0 +1,27 @@
+斐波那契数列
+
+题目描述
+大家都知道斐波那契数列，现在要求输入一个整数n，请你输出斐波那契数列的第n项（从0开始，第0项为0）。
+n<=39
+
+
+class Solution {
+public:
+    int Fibonacci(int n) {
+        vector<int> array;
+        int f1 = 1;
+        int f2 = 1;
+        int fn = 0;
+        array.push_back(0);
+        array.push_back(f1);
+        array.push_back(f2);
+        for(int i = 0;i < n;i++)
+        {
+            fn = f1 + f2;
+            array.push_back(fn);
+            f1 = f2;
+            f2 = fn;
+        }
+        return array[n];
+    }
+};
