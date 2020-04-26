@@ -1,0 +1,71 @@
+【剑指offer】树的子结构（递归+图解）
+
+fighting QAQ 2020-04-26 13:23:33  1  收藏
+编辑 展开
+【剑指offer】树的子结构（递归+详解）
+【本题链接】
+【题目描述】
+输入两棵二叉树A，B，判断B是不是A的子结构。（ps：我们约定空树不是任意一个树的子结构）
+【本题解析】
+本题题意比较明了，主要考察的是树型结构的掌握，一般设计到树型结构的题使用递归是最简单的方法，否则就会比较难以控制代码
+【解题思路】
+总体思路：
+
+首先根据题意来判断第二颗树是否是第一棵树的子树。则要保证第二棵树的全部节点都要与第一棵树的子树节点对应。
+就是要编写一个判断相等的函数判断第二棵树和第一棵树的子树是否相等，要使用递归就一定要找到递归的两个要素：边界条件（递归出口），递归方程（规律）。
+3.我们要找到第一棵树的子树对应的第二棵树的根，根的位置在左右子树都有可能，所以我们仍要使用递归先找左子树，若匹配return true，若不匹配，则找右子树，同理。若左右子树都不匹配则return false;
+【画图解析】
+由于使用多次递归比较绕，我们举个栗子，画图：
+A树：[8,8,7,9,2]
+B数：[8,9,2]
+.
+我们要判断A树的子树是否与B树相等，则需递归判断
+假设此时已找的A树的子树，如何判断两树相等
+
+边界条件(出口):
+1.1首先若A树中的值若不等于B树对应的值则退出
+1.2若两树值全部对应相等，则还要满足B树为空且A的子树不为空，因为若B树中的节点比A树中多，则不是A的子树。如图所有节点都相等，但B树比A树长则不满足条件
+
+2…递归方程(规律) :就是根节点相同，在遍历两树的左子树若相同则遍历右子树，若B树节点为空时结束。
+判断A的子树与B树递归过程：
+
+怎么找A的子树呢?
+仍然要使用递归
+
+【代码如下】
+
+/*
+struct TreeNode {
+	int val;
+	struct TreeNode *left;
+	struct TreeNode *right;
+	TreeNode(int x) :
+			val(x), left(NULL), right(NULL) {
+	}
+};*/
+class Solution {
+public:
+    bool is_subtree(TreeNode* p1,TreeNode* p2)
+    {
+        if(p2 == NULL)
+            return true;
+        if(p1 == NULL)
+            return false;
+        if(p1 -> val != p2 -> val)
+            return false;
+        return is_subtree(p1->left,p2->left) && 
+            is_subtree(p1->right,p2->right);
+    }
+    bool HasSubtree(TreeNode* pRoot1, TreeNode* pRoot2)
+    {
+        if(pRoot1 == NULL || pRoot2 == NULL)
+            return false;
+        if(pRoot1->val == pRoot2->val)
+        {
+            if(is_subtree(pRoot1,pRoot2))
+                return true;
+        }
+        return HasSubtree(pRoot1->left,pRoot2)||
+            HasSubtree(pRoot1->right,pRoot2);
+    }
+};
