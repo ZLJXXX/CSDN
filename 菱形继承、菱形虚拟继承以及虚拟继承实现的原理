@@ -1,0 +1,252 @@
+菱形继承、菱形虚拟继承以及虚拟继承实现的原理
+
+空洞的眼 眸阁 2020-04-22 10:40:45  43  收藏
+展开
+一、菱形继承
+1、什么是单继承：一个子类有一个直接父类，这个继承关系为单继承
+2、什么是多继承：一个子类有两个或两个以上的直接父类，这个继承关系为多继承。
+菱形继承是多继承的一种特殊情况
+如图：
+
+
+从上图可以看出来，在Assiatant(助理)中，person成员会有两份，会形成数据的二义性和数据冗余的问题。
+
+
+代码分析：
+
+#include<iostream>
+#include<string>
+using namespace std;
+class person
+{
+public:
+	string name;
+};
+class teacher : public person 
+{
+protected:
+	int id;//职工编号
+
+};
+class student : public person
+{
+protected:
+	int num;//学号
+};
+class Assistant : public student, public teacher
+{
+protected:
+	string majorCourse;//主修课程
+};
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+这样去直接调用就会有二义性，无法明确访问哪一个父类
+
+在菱形继承中，指定访问那个父类成员就可以避免二义性
+
+针对以上出现的二义性和数据冗余问题，菱形虚拟继承可以解决这个问题：
+二、菱形虚拟继承
+虚拟继承：就是在学生和教师类在继承person时，使用virtual关键字来修饰person.
+
+#include<iostream>
+#include<string>
+using namespace std;
+class person
+{
+public:
+	string name;
+};
+class teacher : virtual public person 
+{
+protected:
+	int id;//职工编号
+
+};
+class student : virtual public person
+{
+protected:
+	int num;//学号
+};
+class Assistant : public student, public teacher
+{
+protected:
+	string majorCourse;//主修课程
+};
+
+int main()
+{
+    //使用菱形虚拟继承可以解决菱形继承带来的数据二义性和数据冗余问题
+	Assistant A;
+	A.name = "zzz";
+	A.student::name = "aaa";
+	A.teacher::name = "bbb";
+
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+菱形虚拟继承的原理解释：（原理实现解释在第三部分）
+
+三、菱形虚拟继承实现的原理：
+
+以代码为例和内存监视为例：
+
+class A
+{
+public:
+	int a;
+};
+class B :  public A
+{
+public:
+	int b;
+};
+class C :public A
+{
+public:
+	int c;
+};
+class D : public B, public C
+{
+public:
+	int _d;
+};
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+（一）、菱形继承的内存、监视窗口
+
+内存监视
+
+结论：从以上两个菱形继承图可以看出数据的冗余，不同的对象中存在两个a。
+
+（二）菱形虚拟继承内存监视
+
+class A
+{
+public:
+	int a;
+};
+class B : virtual public A
+{
+public:
+	int b;
+};
+class C :virtual public A
+{
+public:
+	int c;
+};
+class D : public B, public C
+{
+public:
+	int _d;
+};
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+菱形虚拟继承的内存监视窗口：
+
+解释：
+在内存一中，显示的是在D对象中，将A放在最下边，这个A同时属于B和C，它是公共的，这样避免了数据的冗余。
+接下来就是B、C如何找到A,首先通过B、C这两个指针，指向一张表，B、C这两个指针我们称之为虚基表指针，内存2，和内存3叫虚基表。
+在虚基表中会存在偏移量，供B、C去在内存中寻找A，在上面这个例子中，是一个int型数据，在内存中占四个字节，B为了找到A，会从B位置偏移20，就会找到A。具体就如内存二显示。同理：C找到A会偏移量为12。
+所以，菱形虚拟继承，就是通过虚基表以及虚基表指针来解决数据的二义性和数据冗余。
+————————————————
+版权声明：本文为CSDN博主「空洞的眼 眸阁」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43806995/article/details/105662960
