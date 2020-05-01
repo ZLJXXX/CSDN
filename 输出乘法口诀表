@@ -1,0 +1,24 @@
+输出乘法口诀表
+
+Locokkk 2019-03-24 14:25:41  51  收藏
+展开
+#include<stdio.h>
+#include<stdlib.h>
+int main()
+{
+ int a,b;
+ for(a =1;a<= 9;a++)
+ {
+  for(b=1;b<=a;b++)
+  {
+   printf("%d*%d=%2d ", b, a, b*a);
+   if(a==b)
+    printf("\n");
+  }
+ }
+ system("pause");
+ return 0;
+}
+————————————————
+版权声明：本文为CSDN博主「Locokkk」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43345349/article/details/88776469
