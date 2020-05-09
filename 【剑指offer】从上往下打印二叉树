@@ -1,0 +1,56 @@
+【剑指offer】从上往下打印二叉树
+
+fighting QAQ 2020-05-09 11:35:20  5  收藏
+编辑 展开
+【剑指offer】从上往下打印二叉树
+【本题链接】
+【题目描述】
+从上往下打印出二叉树的每个节点，同层节点从左至右打印。
+【题目解析】
+本题主要考察了队列、树等数据结构的使用，题目描述已经很清晰了，就是层序遍历这棵树，我们根据队列先进先出的规则来解决此题。
+【解题思路】
+1.若树为空，则直接返回数组
+2.若不为空，则按照根节点，根的左子树节点和右子树节点进行打印
+3.将根节点进入队列，取到对头的元素放入数组，进行出队操作，根的左节点和右节点依次进入队列（左右节点为空则跳出），将已放入数组的对头结点删除。
+4.当队列为空时，表示树已经打印完成，返回数组即可。
+详细过程如图：
+
+【代码实现】
+
+/*
+struct TreeNode {
+	int val;
+	struct TreeNode *left;
+	struct TreeNode *right;
+	TreeNode(int x) :
+			val(x), left(NULL), right(NULL) {
+	}
+};*/
+class Solution {
+public:
+    vector<int> PrintFromTopToBottom(TreeNode* root) {
+        vector<int> array;
+        queue<TreeNode*> tque;
+        tque.push(root);
+        TreeNode* fr;
+        if(root == NULL) 
+            return array;
+        while(!tque.empty())
+        {
+            fr = tque.front();
+            array.push_back(fr->val);
+            if(fr->left != NULL)
+                tque.push(fr->left);
+            if(fr->right != NULL)
+                tque.push(fr->right);
+            tque.pop();
+        }
+        return array;
+    }
+};
+
+【本题总结】
+本题主要考察了使用队列来实现树的层序遍历，要熟练使用到队列等数据结构。
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/106013926
