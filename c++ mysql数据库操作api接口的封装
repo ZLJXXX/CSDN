@@ -1,0 +1,967 @@
+c++ mysql数据库操作api接口的封装
+
+若_思 2020-05-06 12:25:13  1549  收藏 6  原力计划
+展开
+目录
+一：关键接口说明
+二：具体实现
+三：接口测试
+四：后续
+一：关键接口说明
+一般预处理流程都是，连接数据库–>预处理–>绑定查询参数–>执行查询–>获取查询结果。
+故api封装之后有如下几个关键的接口：
+
+1：bool connect(); //连接数据库，初始化数据库连接等
+2：bool prepare(const std::string &query);//预处理
+3：template<typename T> void bindValue(int pos, const T &value);//给placeholder相对应的位置绑定参数
+4：bool execute();//执行数据库查询
+5：bool next();//移到下一条记录
+6：template<typename T>T value(int index);//获取结果集index位置中T类型的结果
+1
+2
+3
+4
+5
+6
+二：具体实现
+1：首先需要封装数据库连接的参数配置
+
+DatabaseOption.hpp
+
+#include <string>
+/**
+ * 数据库配置类
+ */
+struct DatabaseOption {
+    std::string host = "127.0.0.1";//数据库ip地址
+    int port = 3307;//端口号
+    std::string username = "root";//用户名
+    std::string password = "123456";//数据库密码
+    std::string databaseName = "test";//数据库名
+    int connectTimeout = 0;//连接的超时时间
+    std::string charsetName = "utf8";//编码
+    int reconnectTime = 1;//超时重连次数
+};
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+2：然后需要封装预处理的参数绑定
+
+PrepareBinder.hpp
+
+
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <mysql.h>
+#include <iostream>
+
+/**
+ * mysql的预处理绑定器
+ */
+class PrepareBinder {
+private:
+    std::vector<MYSQL_BIND> paramBinds;//预处理的参数绑定
+public:
+
+    /**
+     * 绑定的参数集的大小
+     * @param resultBindNum
+     */
+    explicit PrepareBinder(int prepareBindNum) {
+        paramBinds.resize(prepareBindNum);//初始化绑定参数列表
+    }
+
+    std::vector<MYSQL_BIND> &getParamBinds() {
+        return paramBinds;
+    }
+
+    /**
+     * 绑定整型
+     * @param pos
+     * @param value
+     */
+    void bindValue(int pos, const int &value) {
+        paramBinds[pos].buffer_type = MYSQL_TYPE_LONG;
+        paramBinds[pos].buffer = (void *) &value;
+        paramBinds[pos].is_unsigned = false;
+    }
+
+    /**
+     * 绑定无符号整型
+     * @param pos
+     * @param value
+     */
+    void bindValue(int pos, const unsigned int &value) {
+        paramBinds[pos].buffer_type = MYSQL_TYPE_LONG;
+        paramBinds[pos].buffer = (void *) &value;
+        paramBinds[pos].is_unsigned = true;
+    }
+
+    /**
+     * 绑定字符串
+     * @param pos
+     * @param value
+     */
+    void bindValue(int pos, const std::string &value) {
+        paramBinds[pos].buffer_type = MYSQL_TYPE_STRING;
+        paramBinds[pos].buffer = (void *) value.c_str();
+        paramBinds[pos].buffer_length = value.size();
+    }
+};
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+3：再有需要对封装查询结果集进行封装
+
+ResultBinder.hpp
+
+
+
+#include <vector>
+#include <map>
+#include <mysql.h>
+#include <functional>
+#include <iostream>
+
+/**
+ * 结果集的绑定
+ */
+class ResultBinder {
+private:
+    /**
+     * 负责类型转发
+     * @tparam T
+     */
+    template<typename T>
+    struct IndexWrapper {
+        int index = 0;//索引
+
+        explicit IndexWrapper(int index) : index(index) {}
+    };
+
+private:
+    const static int STRING_MAX_LENGTH = 65535;
+
+    std::vector<MYSQL_BIND> resultBinds;
+
+    //字符串缓存
+    std::vector<std::vector<char>> stringBuffer;
+    //整型的缓存
+    std::vector<int> intBuffer;
+
+    //类型与处理函数映射
+    std::map<int, std::function<void(int)>> typeProcessMap = {
+            {MYSQL_TYPE_LONG,       std::bind(&ResultBinder::bindInt, this, std::placeholders::_1)},
+            {MYSQL_TYPE_VAR_STRING, std::bind(&ResultBinder::bindString, this, std::placeholders::_1)}
+    };
+private:
+    void bindInt(int index) {
+        resultBinds[index].buffer_type = MYSQL_TYPE_LONG;
+        resultBinds[index].buffer = &intBuffer[index];
+    }
+
+    void bindString(int index) {
+        stringBuffer[index].clear();
+        stringBuffer[index].resize(STRING_MAX_LENGTH);
+        resultBinds[index].buffer_type = MYSQL_TYPE_STRING;
+        resultBinds[index].buffer = stringBuffer[index].data();
+        resultBinds[index].buffer_length = STRING_MAX_LENGTH;
+    }
+
+    /**
+    * 提取结果集中的字符串结果
+    * @param index
+    * @return
+    */
+    std::string value(IndexWrapper<std::string> wrapper) {
+        return stringBuffer[wrapper.index].data();
+    }
+
+    /**
+    * 提取结果集中的整型结果
+    * @param index
+    * @return
+    */
+    int value(IndexWrapper<int> wrapper) {
+        return intBuffer[wrapper.index];
+    }
+
+public:
+
+    /**
+     * 绑定的结果集的大小,即指列的数量
+     * @param resultBindNum
+     */
+    explicit ResultBinder(int resultBindNum) {
+        resultBinds.resize(resultBindNum);
+        stringBuffer.resize(resultBindNum);
+        intBuffer.resize(resultBindNum);
+    }
+
+
+    /**
+     * 绑定数据库查询结果集
+     * @param fieldTypes
+     * @param index
+     */
+    void bindValue(enum_field_types fieldTypes, int index) {
+        if (typeProcessMap.find(fieldTypes) == typeProcessMap.end()) {
+            std::cerr << "[unsupported type]" << fieldTypes << std::endl;
+            return;
+        }
+        //调用绑定函数
+        typeProcessMap[fieldTypes](index);
+    }
+
+    /**
+    * 提取结果集中的结果
+    * @param index
+    * @return
+    */
+    template<typename T>
+    T value(int index) {
+        return value(std::move(IndexWrapper<T>(index)));
+    }
+
+    std::vector<MYSQL_BIND> &getBindResult() {
+        return resultBinds;
+    }
+};
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+4：最后是对mysql查询接口的封装
+
+Connection.hpp
+
+
+#include "DatabaseOption.hpp"
+#include "PrepareBinder.hpp"
+#include "ResultBinder.hpp"
+#include <mysql.h>
+#include <memory>
+#include <vector>
+#include <iostream>
+#include <list>
+
+/**
+ * mysql数据库连接
+ */
+class Connection {
+public:
+    /**
+    * 数据库连接的初始化配置
+    * @param databaseOption
+    */
+    void setOption(const DatabaseOption &option) {
+        this->option = option;
+    }
+
+    /**
+     * 关闭连接
+     */
+    void close() {
+        if (connection != nullptr) {
+            mysql_close(connection);
+            connection = nullptr;
+        }
+        if (!mysqlStmt)
+            mysql_stmt_free_result(mysqlStmt);
+    }
+
+    /**
+     * 测试数据库连接是否能联通
+     * @return
+     */
+    bool ping() {
+        return mysql_ping(connection) == 0;
+    }
+
+    /**
+     * 获取最后受影响的行数
+     * @return
+     */
+    int getLastAffectedRows() {
+        return (int) mysql_affected_rows(connection);
+    }
+
+    /**
+     * 连接数据库
+     * @return
+     */
+    bool connect() {
+        //初始化mysql
+        connection = mysql_init(nullptr);
+        if (nullptr == connection) {
+            setLastError("mysql init failed");
+            return false;
+        }
+        //设置超时时间
+        if (option.connectTimeout > 0) {
+            if (0 != mysql_options(connection, MYSQL_OPT_CONNECT_TIMEOUT, &option.connectTimeout)) {
+                setLastError("set option error");
+                return false;
+            }
+        }
+        //编码
+        mysql_options(connection, MYSQL_SET_CHARSET_NAME, option.charsetName.c_str());
+        mysql_options(connection, MYSQL_OPT_RECONNECT, &option.reconnectTime);
+        if (!mysql_real_connect(connection, option.host.c_str(), option.username.c_str(), option.password.c_str(),
+                                option.databaseName.c_str(), option.port, nullptr, 0)) {
+            setLastError("failed to connect to database");
+            return false;
+        }
+        return true;
+    }
+
+
+    void setLastError(const std::string &lastError) {
+        this->lastError = "[" + lastError + "] " + mysql_error(connection);
+        std::cerr << this->lastError << std::endl;
+    }
+
+    std::string getLastError() const {
+        return this->lastError;
+    }
+
+    /**
+     * 开启事务
+     * @return
+     */
+    bool begin() {
+        if (mysql_query(connection, "BEGIN")) {
+            setLastError("begin error");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 提交事务
+     * @return
+     */
+    bool commit() {
+        if (mysql_query(connection, "COMMIT")) {
+            setLastError("commit error");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 回滚事务
+     * @return
+     */
+    bool rollback() {
+        if (mysql_query(connection, "ROLLBACK")) {
+            setLastError("rollback error");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 执行数据库查询
+     * @return
+     */
+    bool execute() {
+
+        //绑定查询参数
+        if (mysql_stmt_bind_param(mysqlStmt, &prepareBinder->getParamBinds()[0])) {
+            setLastError("mysql_stmt_bind_param error");
+            return false;
+        }
+
+        //获取结果集元数据
+        mysqlRes = mysql_stmt_result_metadata(mysqlStmt);
+        auto columnNum = mysql_num_fields(mysqlRes);
+        resultBinder = std::make_shared<ResultBinder>(columnNum);
+        //根据表元数据绑定结果集
+        for (int i = 0; i < mysqlRes->field_count; i++) {
+            resultBinder->bindValue(mysqlRes->fields[i].type, i);
+//            std::cout << "name:" << mysqlRes->fields[i].name << " type: " << mysqlRes->fields[i].type << std::endl;
+        }
+        //绑定查询结果
+        if (mysql_stmt_bind_result(mysqlStmt, &resultBinder->getBindResult()[0])) {
+            setLastError("mysql_stmt_bind_result");
+            return false;
+        }
+
+        if (mysql_stmt_execute(mysqlStmt)) {
+            setLastError("mysql_stmt_execute error");
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * 给placeholder相对应的位置绑定参数
+     * @param pos 位置
+     * @param value 值
+     */
+    template<typename T>
+    void bindValue(int pos, const T &value) {
+        prepareBinder->bindValue(pos, value);
+    }
+
+    /**
+     * 预处理
+     * @param query
+     * @return
+     */
+    bool prepare(const std::string &query) {
+        //初始化预处理环境
+        mysqlStmt = mysql_stmt_init(connection);
+        if (!mysqlStmt) {
+            setLastError("mysql_stmt_init error");
+            return false;
+        }
+        if (mysql_stmt_prepare(mysqlStmt, query.c_str(), query.size())) {
+            setLastError("mysql_stmt_prepare error");
+            return false;
+        }
+        //获取预处理绑定的参数个数
+        auto paramCount = mysql_stmt_param_count(mysqlStmt);
+        prepareBinder = std::make_shared<PrepareBinder>(paramCount);
+        return true;
+    }
+
+    /**
+     * 获取下一条记录
+     * @return
+     */
+    bool next() {
+        //0表示正确,其他情况返回错误
+        return mysql_stmt_fetch(mysqlStmt) == 0;
+    }
+
+    /**
+    * 提取结果集中的结果
+    * @param index
+    * @return
+    */
+    template<typename T>
+    T value(int index) {
+        return resultBinder->value<T>(index);
+    }
+
+private:
+    MYSQL *connection = nullptr;
+    MYSQL_STMT *mysqlStmt = nullptr;
+    MYSQL_RES *mysqlRes = nullptr;//结果
+
+    std::string lastError;//最后的错误信息
+    DatabaseOption option;//数据库配置信息
+
+    std::shared_ptr<PrepareBinder> prepareBinder = nullptr;
+    std::shared_ptr<ResultBinder> resultBinder = nullptr;
+
+};
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+三：接口测试
+1：数据库的准备
+
+mysql> create database test;
+mysql> use test;
+mysql> select * from user;
+mysql> insert into user(id,name)values(1,"zhangsan"),(2,"lisi"),(3,"wangwu"),(4,"liwu");
+mysql> select * from user;
++------+----------+
+| id   | name     |
++------+----------+
+|    1 | zhangsan |
+|    2 | lisi     |
+|    3 | wangwu   |
+|    4 | liwu     |
++------+----------+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+2：测试代码
+
+main.cpp
+
+#include <Connection.hpp>
+
+int main() {
+
+    Connection connection;
+    connection.setOption(DatabaseOption());//初始化配置
+    connection.connect();//连接数据库
+    std::string sql = "select name,id from user where `id` > ? and `name` like ?";
+    connection.prepare(sql);//预处理
+    connection.bindValue(0, 1);//绑定查询参数
+    connection.bindValue(1, "%wu");
+    connection.execute();//执行查询
+    while (connection.next()) {
+    	//获取结果
+        std::cout << "id = " << connection.value<int>(1);
+        std::cout << " name = " << connection.value<std::string>(0) << std::endl;
+    }
+
+    return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+输出结果如下
+
+id = 3 name = wangwu
+id = 4 name = liwu
+1
+2
+四：后续
+后续加入数据库连接池
+
+
+若_思 
+原创文章 5获赞 6访问量 1796
+关注
+私信
+
+点赞
+3
+
+评论
+1
+
+分享
+
+————————————————
+版权声明：本文为CSDN博主「若_思」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_39519014/article/details/105946656
