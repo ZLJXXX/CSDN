@@ -1,0 +1,72 @@
+【剑指offer】二叉搜索树的后序遍历序列（举例 + 图解）
+
+fighting QAQ 2020-05-12 11:55:56  5  收藏
+编辑 展开
+【剑指offer】二叉搜索树的后序遍历序列
+【本题链接】
+【题目描述】
+
+输入一个非空整数数组，判断该数组是不是某二叉搜索树的后序遍历的结果。如果是则输出Yes,否则输出No。假设输入的数组的任意两个数字都互不相同。
+
+【解题思路】
+
+性质：
+二叉排序树的性质：左子树上所有节点的值均小于它的根节点；右子树上所有节点的值均大于它的根节点。
+二叉排序树后序遍历的性质：序列最后一个数字是根节点，序列剩余部分分成两部分，前一部分是左子树，后一部分是右子树。
+举例：
+
+判断序列{1,3,2,5,7,6,4}是否是二叉排序树的后序遍历。其中，4是根节点，{1,3,2}比4小是左子树，{5,7,6}比4大是右子树。
+判断{1,3,2}是否是二叉排序树，其中2是根节点，1比2小是左子树，3比2大是右子树。
+判断{5,7,6}是否是二叉排序树，其中6是根节点，5比6小是左子树，7比6大是右子树。
+【递归步骤】
+
+
+
+这棵树及器左右子树都满足两个性质，则表示这个序列就是二叉搜索树的后序遍历，返回true。
+【代码实现】
+
+class Solution {
+public:
+    bool VerifySquenceOfBST(vector<int> sequence) {
+        int size = sequence.size()-1;
+        return my_bst(sequence,0,size);
+    }
+    bool my_bst(vector<int> seq,int begin,int end)
+    {
+        if(seq.empty()||begin > end)
+            return false;
+        int segmentation_index;
+        for(int i = begin;i < end;i++)
+        {
+            if(seq[i] > seq[end])
+            {
+                segmentation_index = i;
+                break;
+            }
+        }
+        for(int j = segmentation_index;j < end;j++)
+        {
+            if(seq[j] < seq[end])
+                return false;
+        }
+        //判断左右子树是否满足
+        bool left = true;
+        if(segmentation_index > begin)
+        {
+            left = my_bst(seq,begin,segmentation_index - 1);
+        }
+        bool right = true;
+        if(segmentation_index < end - 1)
+        {
+            right = my_bst(seq,segmentation_index,end - 1);
+        }
+        return left && right;
+    }
+};
+
+
+【总结】
+本提出要考察了二叉搜索树和后序遍历的相关性质，巧用递归解决此题。
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/106072455
