@@ -1,0 +1,185 @@
+【剑指offer】复杂链表的复制（详解 + 两种方法）
+
+fighting QAQ 2020-05-21 13:27:14  1  收藏
+编辑 展开
+【剑指offer】复杂链表的复制
+【本题链接】
+【题目描述】
+
+输入一个复杂链表（每个节点中有节点值，以及两个指针，一个指向下一个节点，另一个特殊指针random指向一个随机节点），请对此链表进行深拷贝，并返回拷贝后的头结点。（注意，输出结果中请不要返回参数中的节点引用，否则判题程序会直接返回空）
+
+【题目分析】
+本题具有一定难度，主要考查了对于链表的掌握，我们主要使用两种方法解决此题，常规方法逻辑思维比较复杂，对于数据结构的掌控力要求比较高，可以有效的锻炼代码能力和逻辑思维。第二种使用map解决，较为方便，时间复杂度低。
+【解题方法】
+方法一（常规方法）：
+首先要建立复制链表与原链表之间的对应关系，才能让两个链表之间的随机指针random产生联系。将复制的节点插在原链表节点的后面，也就是A->A’->B->B’->NULL，这样的话，复制的节点和原节点也就有了对应的关系，新复制的节点random指向的元素便是原节点random指向的元素的下一个元素，所有新节点random处理完毕后将这个链表再拆分成两个链表即可。
+第一步：复制节点，将新创建的节点N’接到N的后面。
+
+详细步骤：
+1.申请新节点
+2.插入到原节点的后面，要注意指针之间的链接关系（可回想单链表任意位置插入节点的方式）
+
+第二步：复制random随机指针
+因为复制节点都在原节点的后面，则原节点random指向的节点位置的下一个位置，一定是复制接点的random.
+
+详细步骤：
+1.cur在刚才操作过程中已经移至链表尾部，需重置cur。
+2.通过原链表中节点random的对应关系，找到复制节点之间的对应关系从而，找到了复制链表random随即指针的对应关系。
+
+第三步：拆分链表
+
+详细步骤：
+1.申请一个新的链表（复制链表），其头结点为原链表头结点的下一个位置。
+2.找到其对应关系进行拆分
+
+【代码如下】
+
+/*
+struct RandomListNode {
+    int label;
+    struct RandomListNode *next, *random;
+    RandomListNode(int x) :
+            label(x), next(NULL), random(NULL) {
+    }
+};
+*/
+class Solution {
+public:
+    RandomListNode* Clone(RandomListNode* pHead)
+    {
+        if(pHead == NULL)
+            return nullptr;
+        RandomListNode* cur = pHead;
+        while(cur)
+        {
+            RandomListNode* tmp = new RandomListNode(cur->label);
+            tmp->next = cur->next;
+            cur->next = tmp;
+            cur = tmp->next;
+        }
+        cur = pHead;
+        while(cur)
+        {
+            if(cur->random != NULL){
+                cur->next->random = cur->random->next;
+            }
+            cur = cur->next->next;
+        }
+        cur = pHead;
+        RandomListNode* myHead = pHead->next;
+        RandomListNode* mycur = myHead;
+        while(cur)
+        {
+            cur->next = mycur->next;
+            if(mycur->next != NULL){
+                mycur->next = cur->next->next;
+            }
+            cur = cur->next;
+            mycur = mycur->next;
+        }
+        return myHead;
+    }
+};
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+方法二(使用map解决)：
+代码量较小，复制原链表，通过map来决定random的对应关系
+复制原链表的的每一个节点，并用next连接起来，在遍历原链表的时候，将原节点和新复制的节点的映射存进map中<Node，Node’>。然后再同时遍历原链表和新链表，此时新链表的random指针指向的元素便是原链表节点指向的节点在map中的映射，也就是A(random)->B，那么A’(random)->(map[A(random)])，因为在map中存储了原节点和新节点的对应关系，可以在O(1)的时间查找到。
+方法步骤：
+1.拷贝原链表
+2.通过map找到对应的random
+【代码如下】
+
+/*
+struct RandomListNode {
+    int label;
+    struct RandomListNode *next, *random;
+    RandomListNode(int x) :
+            label(x), next(NULL), random(NULL) {
+    }
+};
+*/
+class Solution {
+public:
+    RandomListNode* Clone(RandomListNode* pHead)
+    {
+        if(pHead == NULL)
+            return nullptr;
+        RandomListNode* cur = pHead;
+        RandomListNode* myHead = new RandomListNode(-1);
+        RandomListNode* mycur = myHead;
+        while(cur)
+        {
+            RandomListNode* tmp = new RandomListNode(cur->label);
+            my_map[cur] = tmp;
+            mycur->next = tmp;
+            cur = cur->next;
+            mycur = tmp;
+        }
+        cur = pHead;
+        mycur = myHead->next;
+        while(cur)
+        {
+            if(cur->random != nullptr){
+                 mycur->random = my_map[cur->random];
+            }
+            cur = cur->next;
+            mycur = mycur->next;
+        }
+        return myHead->next;
+    }
+private:
+    map<RandomListNode*,RandomListNode*> my_map;
+};
+
+41
+【总结】
+本体具有一定难度
+我们可以使用传统方法解决此题，锻炼下自己的代码能力和逻辑思维；方法二巧用容器map解决，代码量小，逻辑简单，时间复杂度低。
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/106253305
