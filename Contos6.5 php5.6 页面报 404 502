@@ -1,0 +1,65 @@
+Contos6.5 php5.6 页面报 404 502
+
+待鸣 2020-04-08 16:12:59  64  收藏
+展开
+问题场景
+接问题反馈，部分系统登录时报404，部分刷新页面后正常。
+
+剖析
+
+报 404 页面的地址经检查有该文件，遂检查日志
+
+[ info ] ceshi.sy.foodvip.net/home/login/index.html [运行时间：0.037186s][吞吐率：26.89req/s] [内存消耗：4,285.29kb] [文件加载：65]
+[ info ] [ BEHAVIOR ] Run \app\common\behavior\Initdefine @app_init [ RunTime:0.000429s ]
+[ info ] [ DB ] INIT mysql
+[ info ] [ CACHE ] INIT File
+[ info ] [ BEHAVIOR ] Run \app\common\behavior\Config @app_init [ RunTime:0.015711s ]
+[ info ] [ BEHAVIOR ] Run \app\common\behavior\Compatible @app_init [ RunTime:0.000311s ]
+[ info ] [ LANG ] /www/wwwroot/customer/yanshi/thinkphp/lang/zh-cn.php
+[ info ] [ ROUTE ] array (
+  'type' => 'module',
+  'module' => 
+  array (
+    0 => '502',
+    1 => NULL,
+    2 => NULL,
+  ),
+)
+[ info ] [ PARAM ] array (
+  's' => '/502.html',
+)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+发现日志错误中路由指向 502，且实际请求 根下502.html , 检查 nginx 配置
+
+#ERROR-PAGE-START  错误页配置，可以注释、删除或修改
+    error_page 404 /404.html;
+    error_page 502 /502.html;
+1
+2
+3
+当nginx捕捉到 502 时回去请求 根下 502.html, 但是文件不存在, 故状态码变为 404, 但实际为 502;
+检查 php 日志后，发现报错同时子进程被 kill，初步考虑是否是内存不足，检查 opcache status 发现 used memory 过高，如果 php 或者 服务器出问题，应该大范围 502，考虑是否有中间件操作了php-fpm进程，结合上述考虑，查询 “opcache 502”资料，发现的确会引起类似问题，但是解决方案和实际不符，遂先 关闭 opcache 以确认追踪相关问题。
+
+可能的问题点
+排查时发现内存占用太高，是否可以调整可用内存大小？
+————————————————
+版权声明：本文为CSDN博主「待鸣」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/ozuoyu123/article/details/105390024
