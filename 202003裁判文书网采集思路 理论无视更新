@@ -1,0 +1,877 @@
+202003裁判文书网采集思路 理论无视更新
+
+置顶 待鸣 2020-03-31 17:07:03  560  收藏 3  原力计划
+展开
+！！以下思路从学习的角度出发，仅做学习交流使用，严禁将其应用在非法场景！！
+
+初代机思路
+约在 2018年左右，文书网获取数据的走的api是未加密的，那个时候采集难度最低，常规请求即可
+
+二号机思路
+2019年初文书网WEB端对接口访问增加加密验证，遂考虑对其APP进行逆向，分析出其加密方法及接口，请求之。
+
+三号机思路
+文书网现在web和app经过改版后，常规采集方式把握的死死的，再加上其甚至干扰正常访问的验证机制，使得常规采集方式愈发困难，目前网上大部分大神是对其加密方法进行逆向，双方各显神通，直赶军备竞赛，但是我们的目的是为了获取数据，所以我考虑了另外一种方式去实现功能，前后写过python 和 node 版本，但基本思路是一致的，都是利用 puppeteer 或者 selenium控制 Choremium 进行采集，整个环节模拟人工操作，跳过了加密及反加密的验证，该思路理论可采一切网站，对于有验证码的网站也可以加入判断提示人工打码，力求以最小的成本和较低的难度实现需求。
+
+三号机β-nodejs
+参照了一些基于node的采集项目，为方便熟悉逻辑，我将注释写的很细。
+
+'use strict'
+
+// 引入 fs 模块
+const fs = require('fs');
+
+// 引入 xlsx 模块
+const xlsx = require('node-xlsx').default;
+
+// 引入核心 puppeteer
+// npm install puppeteer --ignore-scripts
+// 如果不加 --ignore-scripts 会报错, 因为它要下载 chormium, 国内网络环境是搞不下来, 除非挂代理
+const puppeteer = require('puppeteer');
+
+(async () => {
+  // 设定 puppetter 启动参数
+  // 主要是要配置 chrome.exe 的路径 文章后边会给下载链接
+  const browser = await puppeteer.launch({
+    // 把安装后的 chrome 路径填到下面
+    executablePath: './chrome-win/chrome.exe',
+    // 是否开启无头模式, 可以理解为是否有可视的浏览器界面
+    headless: false, // 开启界面
+    // defaultViewport: null,
+    // slowMo: 80,
+  });
+  // 新建一个网页
+  const page = await browser.newPage();
+  // 跳转至文书网
+  await page.goto('https://wenshu.court.gov.cn/');
+  // waitForSelector 等待 目标 渲染出来
+  await page.waitForSelector('#_view_1540966814000 > div > div.search-wrapper.clearfix > div.advenced-search');
+  // 模拟点击高级检索
+  await page.click('#_view_1540966814000 > div > div.search-wrapper.clearfix > div.advenced-search');
+  // 配置全文检索的关键词
+  const searchText = '安全';
+  // 全文检索关键字
+  await page.type('#qbValue', searchText);
+  // 点击全文检索类型
+  await page.click('#qbType');
+  // 选择理由
+  await page.click('#qwTypeUl > li:nth-child(6)');
+
+  // // 案件类型
+  await page.click('#selectCon_other_ajlx');
+  // 民事案件 
+  await page.click('#gjjs_ajlx > li:nth-child(4)');
+  // 行政案件
+  await page.click('#gjjs_ajlx > li:nth-child(5)');
+  // 文书类型
+  await page.click('#_view_1540966814000 > div > div.advencedWrapper > div.inputWrapper.clearfix > div:nth-child(9) > div > div > div');
+  // 判决书
+  await page.click('#gjjs_wslx > li:nth-child(3)');
+  // 裁决书
+  await page.click('#gjjs_wslx > li.on');
+  // 年份开始（2017-01-01）
+  await page.type('#cprqStart', '2017-01-01');
+  // 年份结束（2020-12-31）
+  await page.type('#cprqEnd', '2020-12-31');
+  //当事人
+  await page.type('#s17', '');
+
+  // 点击检索
+  await page.click('#searchBtn');
+
+  await page.waitForSelector('#_view_1545184311000 > div.left_7_3 > div > select');
+
+  // 页容量改为15, 这样从一个页面采集的数量比较多
+  await page.select('#_view_1545184311000 > div.left_7_3 > div > select', '15');
+  // 等待 页面内容刷出
+  await page.waitFor(500);
+  // 设置起始页数
+  let pageNum = 1;
+  // 设置 excel 表头
+  const data = [['DocID','案号', '标题', '案件类型', '当事人', '案由', 'pdf内容', 'html内容']];
+  let i = 1;
+  // while 里面配置采集多少页
+  while (pageNum < 2) {
+    pageNum++;
+    // 获取页面列表数据区域
+    const view = await page.$('#_view_1545184311000');
+    const lists = await view.$$('.LM_list');
+
+    // 循环数据列表
+    for (const list of lists) {
+      try {
+        // 获取列表汇总每个信息的超链
+        const href = await list.$('div.list_title.clearfix > h4 > a');
+        // 获取指向的地址
+        let href_url = await href.evaluate(node => node.href);
+        // 根据 href_url 获取 docid, docID 即为文书编号, 这里使用正则
+        let docid = href_url.match(/docId=(\S*)/)[1];
+        
+        // 获取文书的案号
+        let ah = await list.$('div.list_subtitle > span.ah');
+        // 后边会经常用到这个方法, innerText 用以获取 字符串
+        ah = await ah.evaluate(node => node.innerText);
+        // 点击详情页链接 
+        await href.click();
+        // 等待加载
+        await page.waitFor(500);
+        // 第二个标签页的数据
+        const page2 = (await browser.pages())[2];
+        // xpath 获取 title
+        let title = await page2.$('#_view_1541573883000 > div > div.PDF_box > div.PDF_title');
+        title = title !== null ? await title.evaluate(node => node.innerText) : '';
+        // 获取 案件类型
+        let ajlx = await page2.$('#_view_1541573889000 > div:nth-child(1) > div.right_fixed > div.gaiyao_box > div.gaiyao_center > ul > li:nth-child(1) > h4:nth-child(2) > a');
+        ajlx = ajlx !== null ? await ajlx.evaluate(node => node.innerText) : '';
+        // 获取 案件原因
+        let reason = await page2.$('#_view_1541573889000 > div:nth-child(1) > div.right_fixed > div.gaiyao_box > div.gaiyao_center > ul > li:nth-child(1) > h4:nth-child(3) > a');
+        reason = reason !== null ? await reason.evaluate(node => node.innerText) : '';
+        // 获取 client
+        let client = await page2.$('#_view_1541573889000 > div:nth-child(1) > div.right_fixed > div.gaiyao_box > div.gaiyao_center > ul > li:nth-child(1) > h4:nth-child(6) > b');
+        client = client !== null ? await client.evaluate(node => node.innerText) : '';
+        // 获取内容
+        let content = await page2.$('#_view_1541573883000 > div > div.PDF_box');
+        content = content !== null ? await content.evaluate(node => node.innerText) : '';
+        // 获取 html , 可以根据这个去写进一步逻辑 获取内容的细分的字段
+        let html = await page2.$('#_view_1541573883000 > div > div.PDF_box');
+        html = html !== null ? await html.evaluate(node => node.innerHTML) : '';
+        // push 进数据池
+        data.push([docid, ah, title, ajlx, client, reason, content, html]);
+        console.log(`${i++}:${ah}`);
+        // 这个页面的数据获取后 关闭 这个标签页
+        await page2.close();
+      } catch (error) {
+        console.log(i++);
+        console.error('error:', error);
+        continue;
+      }
+    }
+    try {
+      // 当本页面数据采集完后点击分页
+      await page.click(`#_view_1545184311000 > div.left_7_3 > a:nth-child(${pageNum + 1})`);
+    } catch (error) {
+      console.error('error:', error);
+      continue;
+    }
+    await page.waitFor(500);
+  }
+  // 整体采集完后关闭浏览器
+  await browser.close();
+  // 新建 xlsx 文件, 进行相应配置
+  const buffer = xlsx.build([
+    {
+      name: 'sheet1',
+      data,
+    }
+  ]);
+  // fs 方法写入内容
+  fs.writeFileSync('文书'+Date.now()+'.xlsx', buffer, { 'flag': 'w' });
+})();
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+三号机α-python
+以上 node 版本以可以完成任务，python 版本实现较早，很多代码有过修改，但是基本思路和 node 版本一致，其中用了一个国内用的比较少的技术 ---- GraphQuery
+
+GraphQuery —— 与任何后端服务相关联的查询语言和执行引擎 概述 GraphQuery 是一门易于使用的查询语言，它内置了 Xpath/CSS/Regex/JSONpat
+
+流程大约是 python 操作 selemium 控制 chormium 获取页面数据，将页面数据传给 GraphQuery，按照 GQ 规则写好表达式，一起传入 GQ 服务，其返回格式化的数据，以下代码因版本和目标网站网站，部分代码不是适配于文书网，仅做参考；
+
+# 引入依赖库, 需要视情况安装
+from selenium import webdriver
+from threading import Thread
+import pymysql
+import requests
+import json
+import threading
+import random
+
+# 线程数量
+tread_num = 10
+
+
+
+# 采集完直接做写入处理
+def Insert(st_no='', title=''):
+    # SQL 插入语句
+    sql = "INSERT INTO chanpinhb(st_no, title ) VALUES ('%s', '%s')" % (st_no, title)
+    try:
+        # 执行sql语句
+        cursor.execute(sql)
+        # 执行sql语句
+        db.commit()
+    except:
+        # 发生错误时回滚
+        db.rollback()
+
+# 打开数据库连接
+db = pymysql.connect("localhost", "root", "root", "demo")
+
+# 使用 cursor() 方法创建一个游标对象 cursor
+cursor = db.cursor()
+
+# 获取chromedriver的位置
+driver_path = r"G:\chromedriver_win32\chromedriver.exe"
+opt = webdriver.ChromeOptions()
+
+opt.add_argument('--headless')
+opt.add_argument('--disable-gpu')
+
+driver = webdriver.Chrome(executable_path=driver_path, options=opt)
+# 传入链接
+driver.get(
+    "http://www.***.cn")
+
+content = driver.page_source
+# 获取页数//*[@id="b1"]/tbody/tr[15813]/td[3]/a
+conseq = GraphQuery(content, r"""
+                {
+                    url 'css(\"table a\")' [u 'href()']
+                }
+            """)
+# 转一下类型
+count = json.loads(conseq)
+count_int = count['data']['count']
+
+count_int = int(count_int)
+i = int(count_int)
+
+
+def doit(content):
+    global i
+    global count_int
+    while i > 0:
+        if (i != count_int):
+            driver.find_element_by_id("ID_ucForceStandardList_UcPager1_btnNext").click()
+            content = driver.page_source
+            # 这块是告诉 GQ 我们希望从传入的数据中获取的数据格式, GQ会根据规则返回格式化的数据
+        conseq = GraphQuery(content, r"""
+                {
+                    title  `css("[id*=\"ID_ucForceStandardList_dataListStandard_\"][id*=\"mainTd\"]")` [ 
+                    st_no `regex("〖(.*?)〗")`
+                    title `regex("〗(.*)</span>")`
+                    ]
+                }
+            """)
+        # 转一下类型
+        Arr = json.loads(conseq)
+
+        # 遍历出所需格式
+        source = Arr['data']['title']
+        length = len(source)
+        i_key = 0
+        a = []
+        while i_key < length:
+            a.append([source[i_key], source[i_key + 1]])
+            i_key = i_key + 2
+
+        for item in a:
+            Insert(item[0], item[1])
+        i = i - 1
+    # driver.close()
+
+
+thread_list = []
+
+for i in range(tread_num):
+    t = threading.Thread(target=doit(content))
+    t.start()
+    thread_list.append(t)
+
+for t in thread_list: #等待所有线程执行完毕
+    t.join()
+
+# 关闭数据库连接
+db.close()
+# 关闭浏览器
+driver.quit()
+
+————————————————
+版权声明：本文为CSDN博主「待鸣」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/ozuoyu123/article/details/105225579202003裁判文书网采集思路 理论无视更新
+
+置顶 待鸣 2020-03-31 17:07:03  560  收藏 3  原力计划
+展开
+！！以下思路从学习的角度出发，仅做学习交流使用，严禁将其应用在非法场景！！
+
+初代机思路
+约在 2018年左右，文书网获取数据的走的api是未加密的，那个时候采集难度最低，常规请求即可
+
+二号机思路
+2019年初文书网WEB端对接口访问增加加密验证，遂考虑对其APP进行逆向，分析出其加密方法及接口，请求之。
+
+三号机思路
+文书网现在web和app经过改版后，常规采集方式把握的死死的，再加上其甚至干扰正常访问的验证机制，使得常规采集方式愈发困难，目前网上大部分大神是对其加密方法进行逆向，双方各显神通，直赶军备竞赛，但是我们的目的是为了获取数据，所以我考虑了另外一种方式去实现功能，前后写过python 和 node 版本，但基本思路是一致的，都是利用 puppeteer 或者 selenium控制 Choremium 进行采集，整个环节模拟人工操作，跳过了加密及反加密的验证，该思路理论可采一切网站，对于有验证码的网站也可以加入判断提示人工打码，力求以最小的成本和较低的难度实现需求。
+
+三号机β-nodejs
+参照了一些基于node的采集项目，为方便熟悉逻辑，我将注释写的很细。
+
+'use strict'
+
+// 引入 fs 模块
+const fs = require('fs');
+
+// 引入 xlsx 模块
+const xlsx = require('node-xlsx').default;
+
+// 引入核心 puppeteer
+// npm install puppeteer --ignore-scripts
+// 如果不加 --ignore-scripts 会报错, 因为它要下载 chormium, 国内网络环境是搞不下来, 除非挂代理
+const puppeteer = require('puppeteer');
+
+(async () => {
+  // 设定 puppetter 启动参数
+  // 主要是要配置 chrome.exe 的路径 文章后边会给下载链接
+  const browser = await puppeteer.launch({
+    // 把安装后的 chrome 路径填到下面
+    executablePath: './chrome-win/chrome.exe',
+    // 是否开启无头模式, 可以理解为是否有可视的浏览器界面
+    headless: false, // 开启界面
+    // defaultViewport: null,
+    // slowMo: 80,
+  });
+  // 新建一个网页
+  const page = await browser.newPage();
+  // 跳转至文书网
+  await page.goto('https://wenshu.court.gov.cn/');
+  // waitForSelector 等待 目标 渲染出来
+  await page.waitForSelector('#_view_1540966814000 > div > div.search-wrapper.clearfix > div.advenced-search');
+  // 模拟点击高级检索
+  await page.click('#_view_1540966814000 > div > div.search-wrapper.clearfix > div.advenced-search');
+  // 配置全文检索的关键词
+  const searchText = '安全';
+  // 全文检索关键字
+  await page.type('#qbValue', searchText);
+  // 点击全文检索类型
+  await page.click('#qbType');
+  // 选择理由
+  await page.click('#qwTypeUl > li:nth-child(6)');
+
+  // // 案件类型
+  await page.click('#selectCon_other_ajlx');
+  // 民事案件 
+  await page.click('#gjjs_ajlx > li:nth-child(4)');
+  // 行政案件
+  await page.click('#gjjs_ajlx > li:nth-child(5)');
+  // 文书类型
+  await page.click('#_view_1540966814000 > div > div.advencedWrapper > div.inputWrapper.clearfix > div:nth-child(9) > div > div > div');
+  // 判决书
+  await page.click('#gjjs_wslx > li:nth-child(3)');
+  // 裁决书
+  await page.click('#gjjs_wslx > li.on');
+  // 年份开始（2017-01-01）
+  await page.type('#cprqStart', '2017-01-01');
+  // 年份结束（2020-12-31）
+  await page.type('#cprqEnd', '2020-12-31');
+  //当事人
+  await page.type('#s17', '');
+
+  // 点击检索
+  await page.click('#searchBtn');
+
+  await page.waitForSelector('#_view_1545184311000 > div.left_7_3 > div > select');
+
+  // 页容量改为15, 这样从一个页面采集的数量比较多
+  await page.select('#_view_1545184311000 > div.left_7_3 > div > select', '15');
+  // 等待 页面内容刷出
+  await page.waitFor(500);
+  // 设置起始页数
+  let pageNum = 1;
+  // 设置 excel 表头
+  const data = [['DocID','案号', '标题', '案件类型', '当事人', '案由', 'pdf内容', 'html内容']];
+  let i = 1;
+  // while 里面配置采集多少页
+  while (pageNum < 2) {
+    pageNum++;
+    // 获取页面列表数据区域
+    const view = await page.$('#_view_1545184311000');
+    const lists = await view.$$('.LM_list');
+
+    // 循环数据列表
+    for (const list of lists) {
+      try {
+        // 获取列表汇总每个信息的超链
+        const href = await list.$('div.list_title.clearfix > h4 > a');
+        // 获取指向的地址
+        let href_url = await href.evaluate(node => node.href);
+        // 根据 href_url 获取 docid, docID 即为文书编号, 这里使用正则
+        let docid = href_url.match(/docId=(\S*)/)[1];
+        
+        // 获取文书的案号
+        let ah = await list.$('div.list_subtitle > span.ah');
+        // 后边会经常用到这个方法, innerText 用以获取 字符串
+        ah = await ah.evaluate(node => node.innerText);
+        // 点击详情页链接 
+        await href.click();
+        // 等待加载
+        await page.waitFor(500);
+        // 第二个标签页的数据
+        const page2 = (await browser.pages())[2];
+        // xpath 获取 title
+        let title = await page2.$('#_view_1541573883000 > div > div.PDF_box > div.PDF_title');
+        title = title !== null ? await title.evaluate(node => node.innerText) : '';
+        // 获取 案件类型
+        let ajlx = await page2.$('#_view_1541573889000 > div:nth-child(1) > div.right_fixed > div.gaiyao_box > div.gaiyao_center > ul > li:nth-child(1) > h4:nth-child(2) > a');
+        ajlx = ajlx !== null ? await ajlx.evaluate(node => node.innerText) : '';
+        // 获取 案件原因
+        let reason = await page2.$('#_view_1541573889000 > div:nth-child(1) > div.right_fixed > div.gaiyao_box > div.gaiyao_center > ul > li:nth-child(1) > h4:nth-child(3) > a');
+        reason = reason !== null ? await reason.evaluate(node => node.innerText) : '';
+        // 获取 client
+        let client = await page2.$('#_view_1541573889000 > div:nth-child(1) > div.right_fixed > div.gaiyao_box > div.gaiyao_center > ul > li:nth-child(1) > h4:nth-child(6) > b');
+        client = client !== null ? await client.evaluate(node => node.innerText) : '';
+        // 获取内容
+        let content = await page2.$('#_view_1541573883000 > div > div.PDF_box');
+        content = content !== null ? await content.evaluate(node => node.innerText) : '';
+        // 获取 html , 可以根据这个去写进一步逻辑 获取内容的细分的字段
+        let html = await page2.$('#_view_1541573883000 > div > div.PDF_box');
+        html = html !== null ? await html.evaluate(node => node.innerHTML) : '';
+        // push 进数据池
+        data.push([docid, ah, title, ajlx, client, reason, content, html]);
+        console.log(`${i++}:${ah}`);
+        // 这个页面的数据获取后 关闭 这个标签页
+        await page2.close();
+      } catch (error) {
+        console.log(i++);
+        console.error('error:', error);
+        continue;
+      }
+    }
+    try {
+      // 当本页面数据采集完后点击分页
+      await page.click(`#_view_1545184311000 > div.left_7_3 > a:nth-child(${pageNum + 1})`);
+    } catch (error) {
+      console.error('error:', error);
+      continue;
+    }
+    await page.waitFor(500);
+  }
+  // 整体采集完后关闭浏览器
+  await browser.close();
+  // 新建 xlsx 文件, 进行相应配置
+  const buffer = xlsx.build([
+    {
+      name: 'sheet1',
+      data,
+    }
+  ]);
+  // fs 方法写入内容
+  fs.writeFileSync('文书'+Date.now()+'.xlsx', buffer, { 'flag': 'w' });
+})();
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+三号机α-python
+以上 node 版本以可以完成任务，python 版本实现较早，很多代码有过修改，但是基本思路和 node 版本一致，其中用了一个国内用的比较少的技术 ---- GraphQuery
+
+GraphQuery —— 与任何后端服务相关联的查询语言和执行引擎 概述 GraphQuery 是一门易于使用的查询语言，它内置了 Xpath/CSS/Regex/JSONpat
+
+流程大约是 python 操作 selemium 控制 chormium 获取页面数据，将页面数据传给 GraphQuery，按照 GQ 规则写好表达式，一起传入 GQ 服务，其返回格式化的数据，以下代码因版本和目标网站网站，部分代码不是适配于文书网，仅做参考；
+
+# 引入依赖库, 需要视情况安装
+from selenium import webdriver
+from threading import Thread
+import pymysql
+import requests
+import json
+import threading
+import random
+
+# 线程数量
+tread_num = 10
+
+
+
+# 采集完直接做写入处理
+def Insert(st_no='', title=''):
+    # SQL 插入语句
+    sql = "INSERT INTO chanpinhb(st_no, title ) VALUES ('%s', '%s')" % (st_no, title)
+    try:
+        # 执行sql语句
+        cursor.execute(sql)
+        # 执行sql语句
+        db.commit()
+    except:
+        # 发生错误时回滚
+        db.rollback()
+
+# 打开数据库连接
+db = pymysql.connect("localhost", "root", "root", "demo")
+
+# 使用 cursor() 方法创建一个游标对象 cursor
+cursor = db.cursor()
+
+# 获取chromedriver的位置
+driver_path = r"G:\chromedriver_win32\chromedriver.exe"
+opt = webdriver.ChromeOptions()
+
+opt.add_argument('--headless')
+opt.add_argument('--disable-gpu')
+
+driver = webdriver.Chrome(executable_path=driver_path, options=opt)
+# 传入链接
+driver.get(
+    "http://www.***.cn")
+
+content = driver.page_source
+# 获取页数//*[@id="b1"]/tbody/tr[15813]/td[3]/a
+conseq = GraphQuery(content, r"""
+                {
+                    url 'css(\"table a\")' [u 'href()']
+                }
+            """)
+# 转一下类型
+count = json.loads(conseq)
+count_int = count['data']['count']
+
+count_int = int(count_int)
+i = int(count_int)
+
+
+def doit(content):
+    global i
+    global count_int
+    while i > 0:
+        if (i != count_int):
+            driver.find_element_by_id("ID_ucForceStandardList_UcPager1_btnNext").click()
+            content = driver.page_source
+            # 这块是告诉 GQ 我们希望从传入的数据中获取的数据格式, GQ会根据规则返回格式化的数据
+        conseq = GraphQuery(content, r"""
+                {
+                    title  `css("[id*=\"ID_ucForceStandardList_dataListStandard_\"][id*=\"mainTd\"]")` [ 
+                    st_no `regex("〖(.*?)〗")`
+                    title `regex("〗(.*)</span>")`
+                    ]
+                }
+            """)
+        # 转一下类型
+        Arr = json.loads(conseq)
+
+        # 遍历出所需格式
+        source = Arr['data']['title']
+        length = len(source)
+        i_key = 0
+        a = []
+        while i_key < length:
+            a.append([source[i_key], source[i_key + 1]])
+            i_key = i_key + 2
+
+        for item in a:
+            Insert(item[0], item[1])
+        i = i - 1
+    # driver.close()
+
+
+thread_list = []
+
+for i in range(tread_num):
+    t = threading.Thread(target=doit(content))
+    t.start()
+    thread_list.append(t)
+
+for t in thread_list: #等待所有线程执行完毕
+    t.join()
+
+# 关闭数据库连接
+db.close()
+# 关闭浏览器
+driver.quit()
+
+————————————————
+版权声明：本文为CSDN博主「待鸣」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/ozuoyu123/article/details/105225579
