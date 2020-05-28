@@ -1,0 +1,412 @@
+Day06java-Lambda表达式
+
+決别w 2020-04-19 14:56:04  42  收藏
+展开
+Lambda表达式
+前言
+时间就是性命。无端的空耗别人的时间，其实是无异于谋财害命的。 ——鲁迅《门外文谈》
+
+1.什么是Lambda表达式？
+Lambda表达式是JDK 8中一个重要的新特性，它使用一个清晰简洁的表达式来表达一个接口，同时Lambda表达式也简化了对集合以及数组数据的遍历、过滤和提取等操作。
+
+2.使用前提
+	必须是**接口**,接口中只能有**一个抽象方法**
+1
+3.格式:
+	**(数据类型	参数名1,数据类型	参数名2)	->	{方法体}**
+	(): 代表的是要执行接口中对应的那个抽象的方法,如果方法中有参数,那么就需要传递参数
+	->: 固定格式,作用是将小括号中的参数传递给后面的大括号方法体中
+	{}: 代表的是实现接口中那个抽象方法后的方法体
+1
+2
+3
+4
+4.函数式接口:
+定义:
+在JDK 8中，接口上标注有@FunctionalInterface注解的即为函数式接口，在函数式接口内部有且只有一个抽象方法。
+
+说明:
+@FunctionalInterface注解只是显示的标注了接口是一个函数式接口，并强制编辑器进行更严格的检查，确保该接口是函数式接口。
+
+5.Lambda表达式的省略规则:
+如果方法中只有一个参数,那么数据类型和小括号都可以省略
+
+如果方法中有多个参数,那么数据类型就可以省略
+
+如果大括号只有一行代码时,那么大括号 return,分号都可以省略(三者必须一起省略,缺一不可)
+
+6.方法的引用和构造器的引用
+说明:
+Lambda表达式的主体只有一条语句时，程序不仅可以省略包含主体的花括号，还可以通过英文双冒号“::”的语法格式来引用方法和构造器（即构造方法）。
+
+作用:
+可以进一步简化Lambda表达式的书写，其本质都是对Lambda表达式的主体部分已存在的方法进行直接引用，主要区别就是对普通方法与构造方法的引用而已。
+
+7.Lambda表达式支持的类型:
+种类	Lambda****表达式示例	对应的引用示例
+类名引用普通方法	(x,y,…)-> 对象名x.类普通方法名(y,…)	类名::类普通方法名
+类名引用静态方法	(x,y,…) -> 类名.类静态方法名(x,y,…)	类名::类静态方法名
+对象名引用方法	(x,y,…) -> 对象名.实例方法名(x,y,…)	对象名::实例方法名
+构造器引用	(x,y,…) -> new 类名 (x,y,…)	类名::new
+8.类名引用静态方法
+(1)定义:
+类名引用静态方法也就是通过类名对静态方法的引用，该类可以是Java自带的特殊类，也可以是自定义的普通类。
+
+(2)格式:
+方法名(类名::静态方法名称)
+
+(2)实例:
+@FunctionalInterface
+public interface Calcable {
+	public abstract int  calc(int num);
+
+}
+1
+2
+3
+4
+5
+public class Math {
+	// 获取一个数的绝对值
+	public static int abs(int num) {
+		if(num < 0) {
+			return -num; 
+		}else { 
+			return num; }	
+	}
+
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+public class Demo01 {
+	public static void main(String[] args) {
+		
+		//通过Lambda表达式形式来调用method方法
+		//(数据类型 参数名1,数据类型 参数名2)->{重写的方法体}
+		method(-100,(int num)->{return Math.abs(num);});
+		
+		//方法引用
+        //方法名(类名::静态方法名称)
+		method(-20,Math::abs);
+		/*
+		 等效于:
+		 重写calc方法
+		 public int calc(int num){
+		 	return Math.abs(num);
+		 }
+		 */
+	}
+	
+	public static void method(int num,Calcable c) {
+		System.out.println(c.calc(num));
+	}
+
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+运行结果:
+
+100
+20
+1
+2
+（4）理解：
+
+
+
+9.对象名的引用方法
+（1）定义：
+对象名引用方法指的是通过实例化对象的名称来对其方法进行的引用。
+
+（2）格式：
+方法(对象名::方法名)
+
+（3）实例：
+@FunctionalInterface
+public interface Printable {
+	public abstract void print(String s);
+
+}
+1
+2
+3
+4
+5
+public class StringUtils {
+	public void printUpperCase(String s) {
+		System.out.println(s.toUpperCase());
+	}
+}
+1
+2
+3
+4
+5
+public class Demo01 {
+	public static void main(String[] args) {	
+        
+		//使用Lambda表达式
+		//(数据类型 参数名1,数据类型 参数名2)->{重写的方法体}
+		//1.1
+		StringUtils su = new StringUtils();
+		method("s",(String s)->{su.printUpperCase(s);});
+		//1.2
+		method("asdf",(String s)->{new StringUtils().printUpperCase(s);});
+			
+		//使用对象名引用方法来实现
+		//2.1  注意：su对象是上述1.1写法中创建的对象
+		method("abc", su::printUpperCase);
+		//2.2
+		method("qwer",new StringUtils()::printUpperCase);
+	}
+    
+	public static void method(String s,Printable p) {
+		p.print(s);
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+运行结果：
+
+S
+ASDF
+ABC
+QWER
+1
+2
+3
+4
+（4）理解：
+
+
+
+10.构造器的引用方法
+（1）定义：
+构造器引用指的是对类自带的构造器的引用。
+
+（2）格式：
+方法(类名::new)
+
+（3）实例：
+@FunctionalInterface
+
+public interface PersonBuild {
+	public abstract Person buildPerson(String name);
+}
+
+1
+2
+3
+4
+5
+6
+public class Person {
+	private String name;
+	
+	public Person(String name){
+		this.name = name;
+	}
+
+	@Override
+	public String toString() {
+		return "Person [name=" + name + "]";
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+public class Demo01 {
+	public static void main(String[] args) {
+		//使用Lambda表达式来实现
+		method("杨过",(String name)->{return new Person(name);});
+		/*
+		等效于:
+		@Override
+		public Person PersonBuild(String name){
+			new Person(name);	
+		}
+		 */
+		
+		//使用构造方法的引用实现
+		method("小龙女",Person::new);
+	}
+	
+	public static void method(String name,PersonBuild pb) {
+		System.out.println(pb.buildPerson(name));
+	}
+
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+运行结果：
+
+Person [name=杨过]
+Person [name=小龙女]
+1
+2
+（4）理解：
+
+
+11.类名引用普通方法
+（1）定义：
+类名引用普通方法指的是通过一个普通类的类名来对其普通方法进行的引用。
+
+（2）格式：
+方法名(类名::普通的方法名称)
+
+（3）实例：
+@FunctionalInterface
+public interface Printable {
+	public abstract void print(StringUtils su,String s);
+}
+
+1
+2
+3
+4
+5
+public class StringUtils {
+	public void printUpperCase(String s) {
+		System.out.println(s.toUpperCase());	
+	}
+}
+
+1
+2
+3
+4
+5
+6
+public class Demo01 {
+	public static void main(String[] args) {
+		//使用Lambda表达式形式使用           new StringUtils: new一个匿名内部类
+		method(new StringUtils(),"abc",(StringUtils su,String s)->{su.printUpperCase(s);});
+		/*
+		 等效于:
+		 	@Override
+		 	public void print(StringUtils su,Sting s){
+		 		su.printUpperCase(s);
+		 	}
+		*/
+		
+		//使用类名引用普通方法的实现
+		method(new StringUtils(),"qwe",StringUtils::printUpperCase);
+	}
+	
+	public static void method(StringUtils su,String s,Printable p) {
+		p.print(su,s);
+	}
+}
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+运行结果：
+
+ABC
+QWE
+1
+2
+（4）理解：
+
+
+若有不足之处，还请各位前辈能够补充。
+————————————————
+版权声明：本文为CSDN博主「決别w」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/weixin_46526878/article/details/105615483
