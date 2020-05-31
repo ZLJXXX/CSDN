@@ -1,0 +1,23 @@
+Linux——解决安装RPM包出现的conflicts with file from package
+
+www.cnblogs.com 2020-05-21 17:52:40  114  收藏
+展开
+作者专注于Java、架构、Linux、小程序、爬虫、自动化等技术。 工作期间含泪整理出一些资料，微信搜索【程序员高手之路】，回复 【java】【黑客】【爬虫】【小程序】【面试】等关键字免费获取资料。
+
+出现问题
+安装rpm包的时候出现下列问题：conflicts with file from package
+
+
+
+ 
+
+问题分析
+之前安装过rpm包，重新安装的时候没有卸载
+
+问题解决
+使用命令：
+
+rpm -ivh --force rpm包名
+————————————————
+版权声明：本文为CSDN博主「www.cnblogs.com」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_26230421/article/details/106262335
