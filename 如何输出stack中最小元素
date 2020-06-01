@@ -1,0 +1,43 @@
+定义栈的数据结构，请在该类型中实现一个能够得到栈中所含最小元素的min函数（时间复杂度应为O（1））。
+注意：保证测试中不会当栈为空的时候，对栈调用pop()或者min()或者top()方法。
+题解：
+如何输出stack中最小元素。举个例子
+【1，8，3，4，2，6，7】
+知道最小的元素为1，此时记录min = 1；但是将1，删除后此时最小值为2，但是min的值还是为1，如果再次寻找最小值，此时的时间复杂度过大，而且每删除一个元素，寻找剩余元素的最小值也比较麻烦。
+此时将min变成一个stack< int > min
+
+把每次的最小元素（之前的最小元素和新压入栈的元素两者的较小值）都保存起来放到另外一个辅助栈里。下图展示了栈内压入3、4、2、1之后接连两次弹出栈顶数字再压入0时，数据栈、辅助栈和最小值的状态。
+
+　从表中我们可以看出，如果每次都把最小元素压入辅助栈，那么就能保证辅助栈的栈顶一直都是最小元素。
+
+class Solution {
+public:
+    stack<int> index;
+    stack <int > Min;
+    void push(int value) {
+        index.push(value);
+        if(Min.size() == 0 || value < Min.top())
+        {
+            Min.push(value);
+        }
+        else
+        {
+            Min.push(Min.top());
+        }
+    }
+    void pop() {
+        index.pop();
+        Min.pop();
+    }
+    int top() {
+        Min.top();
+        int x = index.top();
+        return x;
+    }
+    int min() {
+        return Min.top();
+    }
+};
+————————————————
+版权声明：本文为CSDN博主「famur」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/famur/article/details/106083514
