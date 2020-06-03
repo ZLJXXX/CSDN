@@ -1,0 +1,546 @@
+前言
+主要学习怎么使用客户端库来实现自己的功能，主要介绍C++ 和python 两种，其他的我不太会。。
+因为卡面发现dashing版本有很多命令不能用，我这边切eloquent来学习
+目前ros2 支持的库有以下这么多
+
+rosidl_generator_java - 生成java的ros接口.
+rosidl_generator_objc - 生成 Objective C 的ros接口.
+rosidl_generator_cpp - 生成c++ 的ros 接口.
+rosidl_generator_c - 生成C 的ros接口
+rosidl - 提供ROS IDL（.msg）定义和代码生成的包。
+rosidl_dds - 生成ROS接口的dds接口.
+基于ros_tutorials 学习 ，可以从以下几个网站学习
+
+https://github.com/ros/ros_tutorials
+https://github.com/ros2/examples
+https://github.com/ros2/demos
+这边文章40000+字，很长，可以去我的专栏看
+也可以跳转都转个文章来看：
+
+创建工作空间
+创建第一个自己的ROS 2 包
+写一个简单的发布和订阅(C++)
+写一个简单的发布和订阅(python)
+写一个简单的服务端和客户端(C++)
+写一个简单的服务端和客户端(python)
+创建自定义的ROS2 msg 和 srv 文件
+ros2doctor 入门
+1 创建工作空间
+① 背景
+工作区是-个包含ROS 2包的目录。在使用ROS 2之前，必须在要使用的终端安装ros2的安装工作区（通过 source your_ws/install/setup.bash）。这样就可以使用ROS2 自带的软件包。
+可以自己创建自定义的工作空间，官方推荐，可以创建一个底层工作空间，和业务工作空间，底层包含所有业务的依赖，也就是模块化
+
+② 前提
+已经有的不用重复安装
+
+安装ros2
+安装colcon sudo apt install python3-colcon-common-extensions
+安装git sudo apt install git
+安装小乌龟 sudo apt install ros-<distro>-turtlesim
+安装rosdep sudo apt-get install python-rosdep
+基本的linux 命令，不会的这里查http://www.ee.surrey.ac.uk/Teaching/Unix/
+文本编辑器，我这边C++用的Clion, python用的pycharm
+③ 任务
+Ⅰ安装ros 2 环境
+安装ros2 的环境，通过source
+在终端执行：
+
+source /opt/ros/<distro>/setup.bash
+1
+例子：
+
+source /opt/ros/eloquent/setup.bash
+1
+推荐写入启动文件.bashrc里，这样就不用敲了，也不会忘记
+
+echo "source /opt/ros/eloquent/setup.bash" >> ~/.bashrc
+1
+Ⅱ 创建文件夹
+每个工作空间搞一个文件夹就行，最好名字显义
+官方用的dev_ws 代表development workspace
+
+mkdir dev_ws
+mkdir dev_ws/src
+cd dev_ws/src
+1
+2
+3
+自己的包就搞到src下面去就行
+
+Ⅲ clone 教程代码
+在dev_ws/src路径下执行命令：git clone https://github.com/ros/ros_tutorials.git -b eloquent-devel
+
+下面这个样子就是下载好了
+
+
+Ⅳ 解决依赖
+以后自己使用别人的包的时候，也是这个解决依赖问题的
+
+在~/dev_ws 路径下执行 sudo rosdep install -i --from-path src --rosdistro eloquent -y
+
+报错的话，按照要求操作就行
+
+sudo rosdep init
+rosdep update
+1
+2
+init 老是失败的话，自己想办法吧，网不好
+
+
+Ⅴ 用colcon 编译
+在~/dev_ws路径下执行编译，命令是这个colcon build
+
+colcon build的其他有用参数：
+
+--packages-up-to 生成所需的包及其所有依赖项，但不是整个工作区（节省时间）
+--symlink-install 避免了每次调整python脚本时都需要重新构建
+--event-handlers console_direct+ 在生成时显示控制台输出
+Ⅵ 安装自定义工作空间
+默认 安装路径的setup.bash 是自动执行的，所以我们只需要执行dev_ws 下面的setup.bash
+可以通过两种方式执行
+
+. install/local_setup.bash
+source install/local_setup.bash
+自定义的工作空间的同名包会覆盖安装路径下的，这个看下研究下setup.bash 就知道了
+
+
+Ⅶ 修改覆盖成
+修改 ~/dev_ws/src/ros_tutorials/turtlesim/src/turtle_frame.cpp 52行，改成setWindowTitle("MyTurtleSim")
+然后编译运行
+
+所以环境不一样，执行的结果也不一样，左边是没有执行安装覆盖层的，右边是安装了的
+
+④ 总结
+在本教程中，您将主要的ROS 2发行版安装作为基础，并通过在新工作区中克隆和构建软件包来创建了覆盖层（自定义咯）。如您在修改过的turtlesim中所看到的，覆盖层位于路径的前面，并且优先于底层（/opt/ros）。
+
+建议使用覆盖层来处理少量软件包，因此您不必将所有内容都放在同一工作区中，而不必在每编译都很费时间。
+
+2 创建第一个自己的ROS 2 包
+① 背景
+Ⅰ什么手机ROS 2 包
+可以将包视为ROS 2代码的容器。如果您希望能够安装代码或与他人共享代码，则需要将其组织在一个软件包中。使用软件包，您可以发布ROS 2的工作，并允许其他人轻松构建和使用它。
+
+ROS 2中的软件包创建使用ament作为其构建系统，并使用colcon作为其构建工具。您可以使用官方支持的CMake或Python创建软件包，尽管确实存在其他构建类型
+
+Ⅱ ROS 2 包有什么组成
+cmake 包
+package.xml 文件包含这个包里的元信息
+CMakeLists.txt 怎么去编译这个包
+最简单的长这个样子
+my_package/
+     CMakeLists.txt
+     package.xml
+1
+2
+3
+python 包
+package.xml 文件包含这个包里的元信息
+setup.py 如何按爪个软件包
+setup.cfg 保证ros2 可以找到这个包
+your_package_name - ROS 工具能找到这个包
+大概这个样子
+
+my_package/
+      setup.py
+      package.xml
+      resource/my_package
+1
+2
+3
+4
+Ⅲ ROS 2 包和工作空间的关系
+一个工作空间可以包含n个包，但是不推荐放很多个，不然每次rebuild 的时候，就是该出去遛弯的时候了
+大概长这个样子
+
+workspace_folder/
+    src/
+      package_1/
+          CMakeLists.txt
+          package.xml
+
+      package_2/
+          setup.py
+          package.xml
+          resource/my_package
+      ...
+      package_n/
+          CMakeLists.txt
+          package.xml
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+② 前提
+准备号工作空间dev_ws
+
+③ 任务
+==下面每个都会有C++ 和 python 两种方式 ==
+
+Ⅰ 创建包
+确保到dev_ws/src路径下
+
+一般我们创建包的命令这个样子就行：
+
+C++ ros2 pkg create --build-type ament_cmake <package_name>
+python ros2 pkg create --build-type ament_python <package_name>
+我们现在加选项 --node-name 可以创建hello world 的包
+
+C++ ros2 pkg create --build-type ament_cmake --node-name my_node_cpp my_package_cpp
+python ros2 pkg create --build-type ament_python --node-name my_node_py my_package_py
+
+
+Ⅱ 编译包
+命令是 colcon build 也可以 选择只编译某一个包 colcon build --packages-select my_package_cpp
+
+这里可能会报邮箱格式不正确的错误，把邮箱在xml里改一下，还是不行，就删除build/文件夹重新来
+
+Ⅲ 安装设置文件(setup.bash)
+cd ~/dev_ws
+. install/setup.bash
+1
+2
+Ⅳ 运行包
+因为用的–node_name 创建的，会有hello world出来
+
+C++ ros2 run my_package_cpp my_node_cpp
+python ros2 run my_package_py my_node_py
+
+Ⅴ 看看包里面都有啥子
+C++
+
+
+python
+
+
+Ⅵ 修改 package.xml
+description， license ，maintainer需要去改
+
+这个样子
+
+
+python要改的话，setup.py要一致和package.xml
+
+
+④ 总结
+通过pkg来创建包，通过 colcon 来编译，成功之后可以执行
+
+命令的说明
+
+usage: ros2 pkg create [-h] [--package-format {2,3}]
+                       [--description DESCRIPTION] [--license LICENSE]
+                       [--destination-directory DESTINATION_DIRECTORY]
+                       [--build-type {cmake,ament_cmake,ament_python}]
+                       [--dependencies DEPENDENCIES [DEPENDENCIES ...]]
+                       [--maintainer-email MAINTAINER_EMAIL]
+                       [--maintainer-name MAINTAINER_NAME]
+                       [--node-name NODE_NAME] [--library-name LIBRARY_NAME]
+                       package_name
+
+Create a new ROS2 package
+
+positional arguments:
+  package_name          The package name
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --package-format {2,3}, --package_format {2,3}
+                        The package.xml format.
+  --description DESCRIPTION
+                        The description given in the package.xml
+  --license LICENSE     The license attached to this package
+  --destination-directory DESTINATION_DIRECTORY
+                        Directory where to create the package directory
+  --build-type {cmake,ament_cmake,ament_python}
+                        The build type to process the package with
+  --dependencies DEPENDENCIES [DEPENDENCIES ...]
+                        list of dependencies
+  --maintainer-email MAINTAINER_EMAIL
+                        email address of the maintainer of this package
+  --maintainer-name MAINTAINER_NAME
+                        name of the maintainer of this package
+  --node-name NODE_NAME
+                        name of the empty executable
+  --library-name LIBRARY_NAME
+                        name of the empty library
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+3 写一个简单的发布和订阅(C++)
+① 背景
+节点是通过ROS graph 进行通信的可执行程序。在本教程中，节点将通过主题以字符串消息的形式相互传递信息。这里使用的示例是一个简单的“talker”和“listener”系统。一个节点发布数据，另一个节点订阅该主题，以便它可以接收该数据
+
+② 前提
+创建好工作空间
+
+③ 任务
+Ⅰ 创建一个包
+创建一个pubsub的包
+
+ros2 pkg create --build-type ament_cmake cpp_pubsub
+1
+改 xml文件里的邮箱别忘了
+切换到dev_ws/src/cpp_pubsub/src 路径下
+
+Ⅱ 写发布节点
+通过命令下载实例文件
+
+wget -O publisher_member_function.cpp https://raw.githubusercontent.com/ros2/examples/master/rclcpp/minimal_publisher/member_function.cpp
+1
+很大概率失败。。。这这这
+
+还是直接贴代码吧
+就算失败也会有个空文件
+
+#include <chrono>
+#include <memory>
+
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/string.hpp"
+
+using namespace std::chrono_literals;
+
+/* This example creates a subclass of Node and uses std::bind() to register a
+* member function as a callback from the timer. */
+
+class MinimalPublisher : public rclcpp::Node
+{
+  public:
+    MinimalPublisher()
+    : Node("minimal_publisher"), count_(0)
+    {
+      publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
+      timer_ = this->create_wall_timer(
+      500ms, std::bind(&MinimalPublisher::timer_callback, this));
+    }
+
+  private:
+    void timer_callback()
+    {
+      auto message = std_msgs::msg::String();
+      message.data = "Hello, world! " + std::to_string(count_++);
+      RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
+      publisher_->publish(message);
+    }
+    rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+    size_t count_;
+  };
+
+  int main(int argc, char * argv[])
+  {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<MinimalPublisher>());
+    rclcpp::shutdown();
+    return 0;
+  }
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+代码解析
+
+
+修改 package.xml
+添加几行在里面
+
+<depend>rclcpp</depend>
+<depend>std_msgs</depend>
+1
+2
+
+
+修改 CMakeLists.txt
+在 find_package(ament_cmake REQUIRED)下面添加
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+1
+2
+接着添加可执行文件的名字为 talker 一会用ros2 run 来运行
+add_executable(talker src/publisher_member_function.cpp)
+ament_target_dependencies(talker rclcpp std_msgs)
+1
+2
+最后添加 install(TARGETS…) 把可执行文件安装到install去
+install(TARGETS
+  talker
+  DESTINATION lib/${PROJECT_NAME})
+1
+2
+3
+最后这个样子
+
+cmake_minimum_required(VERSION 3.5)
+project(cpp_pubsub)
+
+# Default to C99
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
+
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+# uncomment the following section in order to fill in
+# further dependencies manually.
+# find_package(<dependency> REQUIRED)
+
+add_executable(talker src/publisher_member_function.cpp)
+ament_target_dependencies(talker rclcpp std_msgs)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  # uncomment the line when a copyright and license is not present in all source files
+  #set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # uncomment the line when this package is not in a git repo
+  #set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+install(TARGETS
+  talker
+  DESTINATION lib/${PROJECT_NAME})
+
+ament_package()
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+可以尝试编译执行一下
+————————————————
+版权声明：本文为CSDN博主「越来越胖了_mengleijin」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/weixin_36628778/article/details/105291726
