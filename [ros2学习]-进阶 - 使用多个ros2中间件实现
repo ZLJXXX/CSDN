@@ -1,0 +1,115 @@
+[ros2学习]-进阶 - 使用多个ros2中间件实现
+
+越来越胖了_mengleijin 2020-05-28 16:59:57  35  收藏  原力计划
+展开
+文章目录
+① 准备
+② 多个RMW实现
+③ 默认RMW实现
+④ 指定RMW实现
+⑤ 把RMW实现添加到工作空间
+⑥ 故障排除
+确保使用特定的RMW实现
+OSX上的RTI Connext：由于共享内存内核设置不足而失败
+⑦ 总结
+① 准备
+有篇文章要学习下：https://index.ros.org/doc/ros2/Concepts/DDS-and-ROS-middleware-implementations/
+
+RWM支持情况
+
+② 多个RMW实现
+当前活动发行版的ROS 2二进制发行版内置了对一些RMW实现的内置支持（Fast RTPS，RTI Connext Pro，ADLINK OpenSplice和Eclipse Cyclone DDS）。默认值为Fast RTPS，它无需任何其他安装步骤即可工作，因为我们将其与二进制软件包一起分发。自Eloquent以来，Cyclone DDS还与二进制包一起分发。
+
+可以通过安装其他软件包来启用OpenSplice或Connext之类的其他软件包，而无需重建任何内容或替换任何现有软件包。也可以通过源码安装RMW。
+
+在许多情况下，您会发现使用不同RMW实现的节点能够通信，但是并非在所有情况下都是如此。支持的供应商之间的通信配置列表即将发布。
+
+③ 默认RMW实现
+默认是Fast RTPS，如果没安装就安装已安装的RMW的首字字母排序，靠前的那个就是。比如 rmw_opensplice_cpp 和rmw_connext_cpp两个中，默认就会选 rmw_connext_cpp
+
+④ 指定RMW实现
+要使用指定，就必须提前安装好要用的RMW，参考https://index.ros.org/doc/ros2/Installation/DDS-Implementations/
+可以通过环境变量RMW_IMPLEMENTATION来指定RMW
+命令这个样子
+
+RMW_IMPLEMENTATION=rmw_connext_cpp ros2 run demo_nodes_cpp talker
+
+# Run in another terminal
+RMW_IMPLEMENTATION=rmw_connext_cpp ros2 run demo_nodes_py listener
+1
+2
+3
+4
+⑤ 把RMW实现添加到工作空间
+如果想指定特定的RMW在工作空间，可以通过使用--cmake-force-configure参数来实现，也可以在编译之前重新设置默认的RMW通过RMW_IMPLEMENTATION
+
+⑥ 故障排除
+确保使用特定的RMW实现
+如果将RMW_IMPLEMENTATION环境变量设置为未安装支持的RMW实现，则如果仅安装一个实现，则会看到与以下内容类似的错误消息：
+
+Expected RMW implementation identifier of 'rmw_connext_cpp' but instead found 'rmw_fastrtps_cpp', exiting with 102.
+1
+如果您支持安装多个RMW实施，并且请求使用未安装的实施，则将看到类似以下内容的内容：
+
+Error getting RMW implementation identifier / RMW implementation not installed (expected identifier of 'rmw_connext_cpp'), exiting with 1.
+1
+如果发生这种情况，请仔细检查您的ROS 2安装是否包括对您在RMW_IMPLEMENTATION环境变量中指定的RMW实现的支持。
+
+如果要在RMW实现之间切换，请验证ROS 2守护进程未与先前的RMW实现一起运行，以避免节点和命令行工具（例如）之间出现任何问题。例如，如果您运行：ros2 node
+
+RMW_IMPLEMENTATION=rmw_connext_cpp ros2 run demo_nodes_cpp talker
+1
+和
+
+ros2 node list
+1
+它将生成一个具有fast RTPS实现的守护程序：
+
+要想解决这个问题，结束守护进程，然后用正确的RMW实现启动工具
+
+ros2 daemon stop
+1
+OSX上的RTI Connext：由于共享内存内核设置不足而失败
+我也没MAC，看看就行
+
+如果在OSX上运行RTI Connext时收到类似以下的错误消息：
+
+[D0062|ENABLE]DDS_DomainParticipantPresentation_reserve_participant_index_entryports:!enable reserve participant index
+[D0062|ENABLE]DDS_DomainParticipant_reserve_participant_index_entryports:Unusable shared memory transport. For a more in-   depth explanation of the possible problem and solution, please visit https://community.rti.com/kb/osx510.
+1
+2
+此错误是由操作系统允许的共享内存段的数量或大小不足引起的。结果，DomainParticipant无法分配足够的资源并无法计算出导致错误的参与者索引。
+
+您可以临时或永久增加计算机的共享内存资源。
+
+要临时增加设置，您可以以root用户身份运行以下命令：
+
+/usr/sbin/sysctl -w kern.sysv.shmmax=419430400
+/usr/sbin/sysctl -w kern.sysv.shmmin=1
+/usr/sbin/sysctl -w kern.sysv.shmmni=128
+/usr/sbin/sysctl -w kern.sysv.shmseg=1024
+/usr/sbin/sysctl -w kern.sysv.shmall=262144
+1
+2
+3
+4
+5
+要永久增加设置，您将需要编辑或创建文件/etc/sysctl.conf。创建或编辑此文件将需要root权限。添加到现有etc/sysctl.conf文件中或/etc/sysctl.conf使用以下几行创建：
+
+kern.sysv.shmmax=419430400
+kern.sysv.shmmin=1
+kern.sysv.shmmni=128
+kern.sysv.shmseg=1024
+kern.sysv.shmall=262144
+1
+2
+3
+4
+5
+修改此文件后，您将需要重新引导计算机以使更改生效。
+
+⑦ 总结
+主要介绍了RMW的使用和排障操作
+————————————————
+版权声明：本文为CSDN博主「越来越胖了_mengleijin」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/weixin_36628778/article/details/106407341
