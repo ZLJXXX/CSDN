@@ -1,0 +1,320 @@
+# 毕业生信息管理系统
+import datetime
+import sys
+import os
+global Stu_List  # 学生所有信息
+Stu_List = []
+global dataset
+dataset = []
+# 用户信息
+class Pep_Info(object) :
+
+    def __init__(self, sno, sname, key):
+            self.sno = sno
+            self.key = key
+            self.sname = sname
+
+    def show(self) :
+            print("姓名：{} 账号：{} ".format(self.sname, self.sno))
+
+    global Student_List
+    Student_List = []
+
+# 毕业生信息
+
+
+class Stu_Info(object) :
+
+    def __init__(self, name, age,Stu_ID,Class) :
+        self.name = name                   # 学生姓名
+        self.age= age		# 学生年龄
+        self.Stu_ID= Stu_ID    #学生学号
+        self.Class= Class    #学生班级
+
+    def Show_Seek_Stu(self) :
+        print("姓名：{}   年龄：{}   学号：{}   班级：{}".format(self.name,
+                                             self.age,self.Stu_ID,self.Class))
+    def Show(self) :
+        print("{} ,{}.{},{}".format(self.name,
+                                    self.age,self.Stu_ID,self.Class))
+
+
+class Operate() :
+# 查看所有学生信息
+
+    @staticmethod
+    def StudentSee() :
+        x = len(Stu_List)
+        print("毕业生信息系统共有", x, "名学生！！！！")
+        print('所有毕业生信息：')
+        for Stu in Stu_List : # Stu_List是一个存储毕业生信息的列表,列表中每一个元素都是Stu_Info的对象
+            Stu.Show_Seek_Stu()
+
+# 查询毕业生
+    @staticmethod
+    def StudentBorrow() :
+        n = 0
+        Sname = input("\n请输入需要查看学生姓名:")
+        for Stu in Stu_List :
+            if Sname == Stu.name :
+                n += 1
+                Stu.Show_Seek_Stu()
+        if n == 0 :
+                print("未查到此学生信息！")
+
+# 查询毕业生
+    def StudentGive() :
+        n = 0
+        Fname = input("\n请输入需要查看学生班级:")
+        for Stu in Stu_List :
+            if Fname == Stu.Class:
+                n += 1
+                Stu.Show_Seek_Stu()
+
+        if n == 0:
+                print("未查到此班级学生信息！")
+
+# 查看个人信息
+    @staticmethod
+    def StudentInfo():
+            global i
+            Student_List[i].show()
+
+# 管理员查看毕业生
+    @staticmethod
+    def Managerment_See():
+        Operate.StudentSee()
+        n = 0
+        name = input("\n请输入需要查看毕业生的详细信息:")
+        for Stu in Stu_List:
+            if name == Stu.name :
+                n += 1
+                Stu.Show_Seek_Stu()
+        if (n == 0):
+                print("未查到此毕业生信息！")
+
+# 管理员增加毕业生
+    @staticmethod
+    def ManagerAdd() :
+        print("正在进行添加毕业生信息操作\n")
+        name = input('请输入毕业生的名称：')
+        age= input('请输入毕业生年龄：')
+        Stu_ID = input('请输入毕业生学号：')
+        Class= input('请输入毕业生班级：')
+        Stu_List.append(Stu_Info(name,age,Stu_ID,Class))
+        print('添加成功！！！')
+
+# 管理员修改毕业生
+    @staticmethod
+    def Managerment_Update() :
+        print("正在进行修改毕业生信息操作\n")
+        name = input('请输入修改毕业生的名称：')
+        Stu_ID = input('请输入修改毕业生的学号：')
+        for Stu in Stu_List :
+            if name == Stu.name and Stu_ID == Stu.Stu_ID:
+                    name1 = input('请输入正确的毕业生的名称：')
+                    Stu_ID1 = input('请输入正确的毕业生ID：')
+                    Stu.name = name1
+                    Stu.Stu_ID = Stu_ID1
+        print('修改成功！！！')
+
+# 管理员删除毕业生
+    @staticmethod
+    def Managerment_Del() :
+        name = input('请输入删除毕业生的名称：')
+        n = 0
+        for Stu in Stu_List :
+            if name == Stu.name:
+                del Stu_List[n]
+                print("删除成功！！！")
+                return
+            else :
+                n += 1
+
+# 存储数据
+
+def SaveData() :
+
+        savedStdout = sys.stdout  #保存标准输出流
+        with open('Stu.txt', 'wt') as file :
+            sys.stdout = file  #标准输出重定向至文件
+            for i in Stu_List:
+                i.Show()
+
+
+        sys.stdout = savedStdout  #恢复标准输出流
+#读取数据
+
+def loadDatadet(infile) :
+
+        infile = 'F:\\Stu.txt'
+        if  os.path.exists(infile) :
+            f = open(infile, 'r')
+
+            sourceInLine = f.readlines()
+
+            for line in sourceInLine :
+                temp1 = line.strip('\n')
+                temp2 = temp1.split('\t')
+                dataset.append(temp2)
+            return dataset
+
+        else:
+            print("暂未保存数据信息")  # 打开失败,文件不存在说明没有数据保存
+            return
+# 初始化Stu_List
+def Init() :
+    str1 = ''.join([str(x) for x in dataset])
+    start = 0
+    end = 0
+    end1 = 0
+    for i in range(len(dataset)) :
+        end = str1.find(",", end + 1)
+        start = str1.find("'", start + 1)
+        str2 = str1[start + 1:end - 1]
+        end1 = str1.find(".",end+1)
+        str4 = str1[end + 1:end1]
+        end = str1.find(",", end + 1)
+        str5 = str1[end1+1:end]
+        start = str1.find("'", start + 1)
+        str3 = str1[end + 1:start]
+        Stu_List.append(Stu_Info(str2, str4,str5,str3))
+        
+
+# 身份验证
+
+
+class identity(object) :
+
+        @staticmethod
+        def Start() :
+            print('-' * 50)
+            print('毕业生管理系统\n' )
+            print('-' * 50)
+            answer = input('选择用户：\n 1.管理员 \n 2.用户 \n')
+            if answer == '1' :
+                identity.ManagerIdentity()
+            elif answer == '2' :
+                identity.StudentIdentity()
+            else:
+                print('***操作非法***')
+        @classmethod
+        def ManagerIdentity(self) :
+            passwd1 = input('请输入您的密码：')
+            print('-' * 50)
+            if passwd1 == '123456' :
+                print('欢迎使用毕业生管理系统')
+                Menu.ManagerMenu()
+            print('您已退出，请重新输入密码进入：')
+            self.ManagerIdentity()
+
+        @classmethod
+        def StudentIdentity(self) : # 用户信息的验证函数
+            num = eval(input('请输入您的账号：'))
+            passwd2 = eval(input('请输入您的密码：'))
+            print('-' * 50)
+            for s in Student_List :
+                if s.sno == num and s.key == passwd2 :
+                    global i
+                    i += 1
+                    print('欢迎使用毕业生管理系统')
+                    Menu.StudentMenu()
+                    return
+            print('您的用户名或身份不正确！请重新输入：')
+            self.StudentIdentity()
+
+
+class Menu(object) :
+# 定义菜单类,用户和管理员有不同的选择
+
+    @staticmethod
+    def StudentMenu() :
+        print('')
+        while True :
+                    print("\n1.查看毕业生 2.名字查询 3.班级查询 4.查看个人信息 5.切换登陆 0.退出系统\n")
+                    Schoice = input('请选择您要进行的操作：')
+                    if Schoice == '1' :
+                        Operate.StudentSee()
+                    elif Schoice == '2' :
+                        Operate.StudentBorrow()
+                    elif Schoice == '3' :
+                        Operate.StudentGive()
+                    elif Schoice == '4' :
+                        Operate.StudentInfo()
+                    elif Schoice == '5' :
+                        print('')
+                        print('***欢迎再次使用毕业生管理系统***')
+                        identity.Start()
+                    elif Schoice == '0' :
+                        SaveData()
+                        print('')
+                        print('***退出毕业生管理系统***')
+                        return 0
+                    else:
+                        print('您的输入不正确,请重新输入数字\n')
+
+    @staticmethod
+    def ManagerMenu() :
+# 定义管理员选择菜单函数
+        print('')
+        print('1.查看毕业生\n')
+        print('2.增加毕业生\n')
+        print('3.修改毕业生\n')
+        print('4.删除毕业生\n')
+        print('5.切换登陆\n')
+        print('0.退出系统\n')
+        while True:
+            Mchoice = input('请选择您要进行的操作：')
+            if Mchoice == '1' :
+# 管理员查看毕业生部分
+                Operate.Managerment_See()
+            elif Mchoice == '2':
+# 管理员增加毕业生部分
+                Operate.ManagerAdd()
+            elif Mchoice == '3':
+# 管理员修改毕业生部分
+                Operate.Managerment_Update()
+            elif Mchoice == '4':
+# 管理员删除毕业生部分
+                Operate.Managerment_Del()
+            elif Mchoice == '5':
+# 退出菜单部分
+                print('')
+                print('***欢迎再次使用毕业生管理系统***')
+                identity.Start()
+            elif Mchoice == '0':
+                print('')
+                print('***退出毕业生理系统***')
+                SaveData()
+                return 0
+            else:
+                print('您的输入不正确,请重新输入\n')
+
+
+def main() : # 测试数据
+    global n
+    n = -1
+    global i  # Student_List中标识人的下标
+    i = -1
+    #Stu_List = []
+    infile = 'F:\\Stu.txt'
+    loadDatadet(infile)
+
+    if len(dataset) == 0:
+        Stu1 = Stu_List.append(Stu_Info('小周', '20','1705990439',' 软工1702'))
+        Stu2 = Stu_List.append(Stu_Info('小韩', '21','1705990438',' 软工1703'))
+        Stu3 = Stu_List.append(Stu_Info('小陈', '20','1705990440',' 软工1701'))
+        Stu4 = Stu_List.append(Stu_Info('小赵', '20','1705990441',' 软工1701'))
+        Stu5 = Stu_List.append(Stu_Info('小魏', '20','1705990437',' 计本1707'))
+    else:
+        Init()
+
+    global Student_List  # 所有注册用户信息
+    Student_List = []
+    s1 = Student_List.append(Pep_Info(1, '小周', 123))
+    s2 = Student_List.append(Pep_Info(2, '小韩', 345))
+
+
+    identity.Start()
+
+main()
