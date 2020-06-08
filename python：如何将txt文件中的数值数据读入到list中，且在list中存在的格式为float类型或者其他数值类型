@@ -1,0 +1,52 @@
+python：如何将txt文件中的数值数据读入到list中，且在list中存在的格式为float类型或者其他数值类型
+
+little_yan_yan 2018-02-09 22:38:12  35101  收藏 38
+展开
+    最近需要将txt文件中的数值型数据读入到list列表中，但是网上很多的方法将txt文件中的数据读入到list中时，在list中的存在形式是string类型，在后面的运算很麻烦，所以需要将string类型转换为float类型，在这里在说明一下，将txt文件内容读入后，是一种嵌套列表的形式，[[第一行数据],[第二行数据],[第三行数据],[第四行数据]......]，相信你们也需要这种形式。话不多说，跟着我的步伐开始操作：
+
+1.介绍我的txt文件内容是这样的，准确来说是在excle表格中复制粘贴到txt文档中的（这里的一列介绍excle中的一列，一行就是excle中的一行），如图所示：
+
+
+2.将txt文档中的数据读入到list列表中，代码如下：
+def loadDatadet(infile):
+    f=open(infile,'r')
+    sourceInLine=f.readlines()
+    dataset=[]
+    for line in sourceInLine:
+        temp1=line.strip('\n')
+        temp2=temp1.split('\t')
+        dataset.append(temp2)
+     return dataset
+infile='F:\pycharm\h5py_torch\hdf5_format\\test.txt'
+infile=loadDatadet(infile)
+print('dataset='infile)
+这样输出的结果如图，可以看出数据已经存入到了list中，但是格式为string类型：
+
+
+
+3.将string类型转换为float类型，只需在原有的代码中添加一些用于数据类型转换的代码即可，执行的代码如下：
+def loadDatadet(infile,k):
+    f=open(infile,'r')
+    sourceInLine=f.readlines()
+    dataset=[]
+    for line in sourceInLine:
+        temp1=line.strip('\n')
+        temp2=temp1.split('\t')
+        dataset.append(temp2)
+    for i in range(0,len(dataset)):
+        for j in range(k):
+            dataset[i].append(float(dataset[i][j]))
+        del(dataset[i][0:k])
+    return dataset
+infile='F:\pycharm\h5py_torch\hdf5_format\\test.txt'
+k=6
+infile=loadDatadet(infile,k)
+print('dataset=',infile)
+此时输出的结果如图所示，已经将string类型转换为float类型，特别说明一下，k值的含义是txt中的列数，本实验是6列，所以k的赋值为6。
+
+
+
+如果不想为float类型，想为int或者double类型，直接将代码中的float变为int或者double即可。
+————————————————
+版权声明：本文为CSDN博主「little_yan_yan」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/littlle_yan/article/details/79302315
