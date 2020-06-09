@@ -1,0 +1,84 @@
+MySQL中length()、char_length()的区别和用法
+
+_陈哈哈 2020-06-08 14:37:44  614  收藏
+展开
+在MySQL中length(str)、char_length(str)都属于判断长度的内置函数，根据其得到字符串的长度。这两个方法的区别是我们面向SQL编程时容易采坑的地方，本文带你通俗易懂的了解这两个知识点。
+
+目录
+
+ 
+
+方法概述：
+
+用法示例：
+
+扩展：
+
+方法概述：
+char_length(str)
+计算单位：字符
+不管汉字还是数字或者是字母都算是一个字符
+length(str)
+计算单位：字节
+utf8编码：一个汉字三个字节，一个数字或字母一个字节。
+gbk编码：一个汉字两个字节，一个数字或字母一个字节。
+ 
+
+用法示例：
+（1）查看某字符串的长度（比如本站网址）
+
+SELECT LENGTH('www.baidu.com');
+-- 返回值:13
+（2）查询应用表（app_info）中标题（appName）最长的10篇文章
+
+length(str)：
+
+-- appName字节长度前10；
+SELECT appName FROM app_info ORDER BY LENGTH(appName) LIMIT 10;
+
+
+char_length(str)：
+
+-- appName字符长度前10；
+SELECT appName FROM app_info ORDER BY CHAR_LENGTH(appName) LIMIT 10;
+
+
+
+（3）查出用户名长度小于6个字符的用户列表
+
+-- appName字节长度小于5的；
+SELECT appName FROM app_info WHERE LENGTH(appName) < 5;
+
+
+-- appName字符长度小于5的；
+SELECT appName FROM app_info WHERE CHAR_LENGTH(appName) < 5;
+
+
+（4）通过length()<>char_length()可以用来检验是否含有中文字符
+
+-- 检验是否含有中文字符
+SELECT
+	NAME,
+	LENGTH(NAME) AS NAME_length,
+	CHAR_LENGTH(NAME) AS NAME_char_length
+FROM
+	student
+WHERE
+	LENGTH(NAME) <> CHAR_LENGTH(NAME);
+
+
+
+扩展：
+MySQL5.0.3版本之后varchar类型大小的计算方式有所变化，从最早的按字节算大小varchar(length)改成了varchar(char_length)。
+
+1）MySQL 5.0.3 之前：
+
+数据类型大小：0--255字节
+详解：varchar(20)中的20表示字节数，如果存放utf-8编码的话只能放6个汉字。varchar(n)，这里的n表示字节数。
+2）MySQL 5.0.3之后：
+
+数据类型大小：0--65535字节，但最多占65532字节（其中需要用两个字节存放长度，小于255字节用1个字节存放长度）
+详解：varchar(20)表示字符数，不管什么编码，不管是英文还是中文都可以存放200个。
+————————————————
+版权声明：本文为CSDN博主「_陈哈哈」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_39390545/article/details/106618423
