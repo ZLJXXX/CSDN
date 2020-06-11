@@ -1,0 +1,228 @@
+MySQL数据库面试题（2020最新版）
+
+ThinkWon 2020-03-10 17:20:40  215845  收藏 11520  原力计划
+展开
+文章目录
+数据库基础知识
+为什么要使用数据库
+什么是SQL？
+什么是MySQL?
+数据库三大范式是什么
+mysql有关权限的表都有哪几个
+MySQL的binlog有有几种录入格式？分别有什么区别？
+数据类型
+mysql有哪些数据类型
+引擎
+MySQL存储引擎MyISAM与InnoDB区别
+MyISAM索引与InnoDB索引的区别？
+InnoDB引擎的4大特性
+存储引擎选择
+索引
+什么是索引？
+索引有哪些优缺点？
+索引使用场景（重点）
+索引有哪几种类型？
+索引的数据结构（b树，hash）
+索引的基本原理
+索引算法有哪些？
+索引设计的原则？
+创建索引的原则（重中之重）
+创建索引的三种方式，删除索引
+创建索引时需要注意什么？
+使用索引查询一定能提高查询的性能吗？为什么
+百万级别或以上的数据如何删除
+前缀索引
+什么是最左前缀原则？什么是最左匹配原则
+B树和B+树的区别
+使用B树的好处
+使用B+树的好处
+Hash索引和B+树所有有什么区别或者说优劣呢?
+数据库为什么使用B+树而不是B树
+B+树在满足聚簇索引和覆盖索引的时候不需要回表查询数据，
+什么是聚簇索引？何时使用聚簇索引与非聚簇索引
+非聚簇索引一定会回表查询吗？
+联合索引是什么？为什么需要注意联合索引中的顺序？
+事务
+什么是数据库事务？
+事物的四大特性(ACID)介绍一下?
+什么是脏读？幻读？不可重复读？
+什么是事务的隔离级别？MySQL的默认隔离级别是什么？
+锁
+对MySQL的锁了解吗
+隔离级别与锁的关系
+按照锁的粒度分数据库锁有哪些？锁机制与InnoDB锁算法
+从锁的类别上分MySQL都有哪些锁呢？像上面那样子进行锁定岂不是有点阻碍并发效率了
+MySQL中InnoDB引擎的行锁是怎么实现的？
+InnoDB存储引擎的锁的算法有三种
+什么是死锁？怎么解决？
+数据库的乐观锁和悲观锁是什么？怎么实现的？
+视图
+为什么要使用视图？什么是视图？
+视图有哪些特点？
+视图的使用场景有哪些？
+视图的优点
+视图的缺点
+什么是游标？
+存储过程与函数
+什么是存储过程？有哪些优缺点？
+触发器
+什么是触发器？触发器的使用场景有哪些？
+MySQL中都有哪些触发器？
+常用SQL语句
+SQL语句主要分为哪几类
+超键、候选键、主键、外键分别是什么？
+SQL 约束有哪几种？
+六种关联查询
+什么是子查询
+子查询的三种情况
+mysql中 in 和 exists 区别
+varchar与char的区别
+varchar(50)中50的涵义
+int(20)中20的涵义
+mysql为什么这么设计
+mysql中int(10)和char(10)以及varchar(10)的区别
+FLOAT和DOUBLE的区别是什么？
+drop、delete与truncate的区别
+UNION与UNION ALL的区别？
+SQL优化
+如何定位及优化SQL语句的性能问题？创建的索引有没有被使用到?或者说怎么才可以知道这条语句运行很慢的原因？
+SQL的生命周期？
+大表数据查询，怎么优化
+超大分页怎么处理？
+mysql 分页
+慢查询日志
+关心过业务系统里面的sql耗时吗？统计过慢查询吗？对慢查询都怎么优化过？
+为什么要尽量设定一个主键？
+主键使用自增ID还是UUID？
+字段为什么要求定义为not null？
+如果要存储用户的密码散列，应该使用什么字段进行存储？
+优化查询过程中的数据访问
+优化长难的查询语句
+优化特定类型的查询语句
+优化关联查询
+优化子查询
+优化LIMIT分页
+优化UNION查询
+优化WHERE子句
+数据库优化
+为什么要优化
+数据库结构优化
+MySQL数据库cpu飙升到500%的话他怎么处理？
+大表怎么优化？某个表有近千万数据，CRUD比较慢，如何优化？分库分表了是怎么做的？分表分库了有什么问题？有用到中间件么？他们的原理知道么？
+垂直分表
+适用场景
+缺点
+水平分表：
+适用场景
+水平切分的缺点
+MySQL的复制原理以及流程
+读写分离有哪些解决方案？
+备份计划，mysqldump以及xtranbackup的实现原理
+数据表损坏的修复方式有哪些？
+Java面试总结汇总，整理了包括Java基础知识，集合容器，并发编程，JVM，常用开源框架Spring，MyBatis，数据库，中间件等，包含了作为一个Java工程师在面试中需要用到或者可能用到的绝大部分知识。欢迎大家阅读，本人见识有限，写的博客难免有错误或者疏忽的地方，还望各位大佬指点，在此表示感激不尽。文章持续更新中…
+
+序号	内容	链接地址
+1	Java基础知识面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104390612
+2	Java集合容器面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104588551
+3	Java异常面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104390689
+4	并发编程面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104863992
+5	JVM面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104390752
+6	Spring面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104397516
+7	Spring MVC面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104397427
+8	Spring Boot面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104397299
+9	Spring Cloud面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104397367
+10	MyBatis面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/101292950
+11	Redis面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/103522351
+12	MySQL数据库面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104778621
+13	消息中间件MQ与RabbitMQ面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104588612
+14	Dubbo面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104390006
+15	Linux面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104588679
+16	Tomcat面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104397665
+17	ZooKeeper面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104397719
+18	Netty面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/104391081
+19	架构设计&分布式&数据结构与算法面试题（2020最新版）	https://thinkwon.blog.csdn.net/article/details/105870730
+数据库基础知识
+为什么要使用数据库
+数据保存在内存
+
+优点： 存取速度快
+
+缺点： 数据不能永久保存
+
+数据保存在文件
+
+优点： 数据永久保存
+
+缺点：1）速度比内存操作慢，频繁的IO操作。2）查询数据不方便
+
+数据保存在数据库
+
+1）数据永久保存
+
+2）使用SQL语句，查询方便效率高。
+
+3）管理数据方便
+
+什么是SQL？
+结构化查询语言(Structured Query Language)简称SQL，是一种数据库查询语言。
+
+作用：用于存取数据、查询、更新和管理关系数据库系统。
+
+什么是MySQL?
+MySQL是一个关系型数据库管理系统，由瑞典MySQL AB 公司开发，属于 Oracle 旗下产品。MySQL 是最流行的关系型数据库管理系统之一，在 WEB 应用方面，MySQL是最好的 RDBMS (Relational Database Management System，关系数据库管理系统) 应用软件之一。在Java企业级开发中非常常用，因为 MySQL 是开源免费的，并且方便扩展。
+
+数据库三大范式是什么
+第一范式：每个列都不可以再拆分。
+
+第二范式：在第一范式的基础上，非主键列完全依赖于主键，而不能是依赖于主键的一部分。
+
+第三范式：在第二范式的基础上，非主键列只依赖于主键，不依赖于其他非主键。
+
+在设计数据库结构的时候，要尽量遵守三范式，如果不遵守，必须有足够的理由。比如性能。事实上我们经常会为了性能而妥协数据库的设计。
+
+mysql有关权限的表都有哪几个
+MySQL服务器通过权限表来控制用户对数据库的访问，权限表存放在mysql数据库里，由mysql_install_db脚本初始化。这些权限表分别user，db，table_priv，columns_priv和host。下面分别介绍一下这些表的结构和内容：
+
+user权限表：记录允许连接到服务器的用户帐号信息，里面的权限是全局级的。
+db权限表：记录各个帐号在各个数据库上的操作权限。
+table_priv权限表：记录数据表级的操作权限。
+columns_priv权限表：记录数据列级的操作权限。
+host权限表：配合db权限表对给定主机上数据库级操作权限作更细致的控制。这个权限表不受GRANT和REVOKE语句的影响。
+MySQL的binlog有有几种录入格式？分别有什么区别？
+有三种格式，statement，row和mixed。
+
+statement模式下，每一条会修改数据的sql都会记录在binlog中。不需要记录每一行的变化，减少了binlog日志量，节约了IO，提高性能。由于sql的执行是有上下文的，因此在保存的时候需要保存相关的信息，同时还有一些使用了函数之类的语句无法被记录复制。
+row级别下，不记录sql语句上下文相关信息，仅保存哪条记录被修改。记录单元为每一行的改动，基本是可以全部记下来但是由于很多操作，会导致大量行的改动(比如alter table)，因此这种模式的文件保存的信息太多，日志量太大。
+mixed，一种折中的方案，普通操作使用statement记录，当无法使用statement的时候使用row。
+此外，新版的MySQL中对row级别也做了一些优化，当表结构发生变化的时候，会记录语句而不是逐行记录。
+
+数据类型
+mysql有哪些数据类型
+分类	类型名称	说明
+整数类型	tinyInt	很小的整数(8位二进制)
+smallint	小的整数(16位二进制)
+mediumint	中等大小的整数(24位二进制)
+int(integer)	普通大小的整数(32位二进制)
+小数类型	float	单精度浮点数
+double	双精度浮点数
+decimal(m,d)	压缩严格的定点数
+日期类型	year	YYYY 1901~2155
+time	HH:MM:SS -838:59:59~838:59:59
+date	YYYY-MM-DD 1000-01-01~9999-12-3
+datetime	YYYY-MM-DD HH:MM:SS 1000-01-01 00:00:00~ 9999-12-31 23:59:59
+timestamp	YYYY-MM-DD HH:MM:SS 19700101 00:00:01 UTC~2038-01-19 03:14:07UTC
+文本、二进制类型	CHAR(M)	M为0~255之间的整数
+VARCHAR(M)	M为0~65535之间的整数
+TINYBLOB	允许长度0~255字节
+BLOB	允许长度0~65535字节
+MEDIUMBLOB	允许长度0~167772150字节
+LONGBLOB	允许长度0~4294967295字节
+TINYTEXT	允许长度0~255字节
+TEXT	允许长度0~65535字节
+MEDIUMTEXT	允许长度0~167772150字节
+LONGTEXT	允许长度0~4294967295字节
+VARBINARY(M)	允许长度0~M个字节的变长字节字符串
+BINARY(M)	允许长度0~M个字节的定长字节字符串
+————————————————
+版权声明：本文为CSDN博主「ThinkWon」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/ThinkWon/article/details/104778621
