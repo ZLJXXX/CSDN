@@ -1,0 +1,63 @@
+Linux系列——解决ping不通外网
+
+前方一片光明 2020-06-18 11:30:49  82  收藏
+分类专栏： Linux系列
+版权
+作者专注于Java、架构、Linux、小程序、爬虫、自动化等技术。 工作期间含泪整理出一些资料，微信搜索【程序员高手之路】，回复 【java】【黑客】【爬虫】【小程序】【面试】等关键字免费获取资料。技术交流、项目合作可私聊。 
+
+前言
+Linux常见问题汇总文章：linux常见问题汇总
+
+下面是详细步骤：
+
+Step1 配置本地网卡
+
+
+Step2 配置虚拟网卡
+VMware Network Adapter VMnet8网络适配器IP设置与虚拟机IP需要在同一个网段
+
+
+
+Step3 配置虚拟网络DHCP
+
+
+Step4 NAT设置
+
+
+Step5 ifcfg-eth*
+修改/etc/sysconfig/network-scripts/ifcfg-eth0：
+
+DEVICE=eth0  #网卡接口名称
+TYPE=Ethernet #网卡类型为以太网
+ONBOOT=yes #系统启动时自动激活网卡
+NM_CONTROLLED=no  
+BOOTPROTO=none  #协议类型通常有四种：static dhcp bootp none
+DEFROUTE=yes  
+PEERDNS=yes
+PEERROUTES=yes
+IPV4_FAILURE_FATAL=yes  #使用IPV4协议版本
+IPV6INIT=no    #不使用IPV6协议版本
+NAME="System eth0"
+IPADDR=192.168.1.111   #linux的ip地址
+GATEWAY=192.168.1.1    #网关
+NETMASK=255.255.255.0  #子网掩码
+DNS1=114.114.114.114   #DNS服务器地址
+ARPCHECK=no  
+step6 永久关闭防火墙
+chkconfig iptables off
+
+Step7 在/etc/resolv.conf下添加DNS
+nameserver 114.114.114.114 
+nameserver 8.8.8.8
+
+Step8 重启network服务
+service network restart
+
+Step9 如果以上步骤不行的话，换个DNS试一下
+例如：把192.168.1.1换成192.168.1.55（可能192.168.1.1被别人占用了）
+主机ip地址改变，也要修改linux的ip地址
+
+作者专注于Java、Linux、小程序、爬虫、自动化等技术。 工作期间含泪整理出一些资料，微信搜索【程序员高手之路】，回复 【java】【黑客】【爬虫】【小程序】【面试】等关键字免费获取资料。
+————————————————
+版权声明：本文为CSDN博主「前方一片光明」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_26230421/article/details/106748065
