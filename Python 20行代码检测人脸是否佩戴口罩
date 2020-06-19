@@ -1,0 +1,124 @@
+Python 20行代码检测人脸是否佩戴口罩
+
+Python实用宝典 2020-06-14 15:56:43  2659  收藏 190  原力计划
+分类专栏： Python 教程 文章标签： python机器学习人工智能深度学习
+版权
+
+
+最近，口罩成为绝对热门的话题，在疫情之下，出门不戴口罩不仅对自己不负责，对他人而言也是一种潜在的威胁。所以许多小区都有保安在门口守着，谁要是不戴口罩就吼回去（吓死我了）。
+
+尽管如此，人工检测总有可能漏掉人，而且无时无刻地盯着，保安叔叔也特别累。今天我们就来尝试用计算机自动检测人脸是否佩戴口罩的可行性，如果可行，那么根据我们以前的推送：人脸检测自动开机，就可以做一个实时摄像头，如果发现有人没戴口罩则发送警告给保安，以提高保安的工作效率。
+
+当然，想要识别人脸是否佩戴口罩，需要做很多训练数据的收集，不过最近百度开源了他们的人脸口罩识别模型：PaddleHub 口罩检测。我们今天就来试试这个模型的效果。
+
+1.准备
+为了实现这个实验，Python是必不可少的，如果你还没有安装Python，建议阅读我们的这篇文章哦：超详细Python安装指南。
+
+然后，我们需要安装百度的paddlepaddle, 进入他们的官方网站就有详细的指引：
+https://www.paddlepaddle.org.cn/install/quick
+
+
+
+根据你自己的情况选择这些选项，最后一个CUDA版本，由于本实验不需要训练数据，也不需要太大的计算量，所以直接选择CPU版本即可。选择完毕，下方会出现安装指引，不得不说，Paddlepaddle这些方面做的还是比较贴心的（就是名字起的不好）。
+
+
+
+要注意，如果你的Python3环境变量里的程序名称是Python，记得将语句改为Python xxx，如下进行安装：
+
+python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
+1
+还需要安装paddlehub：
+
+pip install -i https://mirror.baidu.com/pypi/simple paddlehub
+1
+2.编写代码
+Paddlehub作为一个深度学习平台，用起来还是相当方便的，尤其是对于我这种(调包小王子)非研究型应用者。一共就只有四个步骤：
+
+1.引入模块和图片
+2.载入模型
+3.分类与预测
+4.结果展示
+把我们需要测试的图片保存在该代码文件的同一目录下，命名为3.jpg:
+
+
+
+想看这个小姐姐摘下口罩的样子
+
+代码如下：
+
+import paddlehub as hub
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+
+# 1.待预测图片
+test_img_path = ["./3.jpg"]
+
+# 2.载入模型
+module = hub.Module(name="pyramidbox_lite_mobile_mask")
+
+# 3.预测
+input_dict = {"image": test_img_path}
+results = module.face_detection(data=input_dict)
+
+# 4.结果展示
+img = mpimg.imread("detection_result/3.jpg")
+plt.figure(figsize=(10, 10))
+plt.imshow(img)
+plt.axis('off')
+plt.show()
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+没错，你没看错，就是这么简单。去掉空行和注释只有12行代码，再狠一点，把matplot展示部分全部去掉，只有6行代码。再再狠一点，把test_img_path和input_path变量以及module.face_detection语句合并，你会发现只有3行代码：
+
+import paddlehub as hub
+module = hub.Module(name="pyramidbox_lite_mobile_mask")
+results = module.face_detection(data={"image": ["./3.jpg"]}) 
+1
+2
+3
+执行完后的分类结果在同一目录下的detection_result目录下查看即可。所以说，说20行代码是谦虚，3行代码就够了。
+
+3.结果展示
+我们测试的那张图片，结果如下：
+
+
+
+MASK:97.64% 代表这个人戴了口罩，可信度为97.64%。
+NO MASK: 97.41% 代表这个人没戴口罩，可信度为97.41%
+
+最后面那个大叔也是MASK，但是它的可信度只有54.31%，所以很可能是误判，在我们实际应用的时候，只需要把警告阈值（比如80%）提高，即可筛去这些不可信的分类。
+
+不过，这个模型有一个缺点就是，对于远距离的人判断并不是很精确：
+
+
+
+离镜头最近的这个人可能是因为侧脸的原因，脸部特征不明显识别不出来。但是远处的这些戴着口罩却被识别为没戴口罩的，就是这个模型的锅了。不过，通过阈值过滤和缩短摄像头摄影距离还是可以将这个模型用于实际生活中的。
+
+我们的文章到此就结束啦，如果你希望我们今天的Python 教程，请持续关注我们，如果对你有帮助，麻烦在下面点一个赞/在看哦，有任何问题都可以在下方留言区留言，我们都会耐心解答的！
+
+​Python实用宝典 (pythondict.com)
+不只是一个宝典
+欢迎关注公众号：Python实用宝典
+
+原文来自Python实用宝典：Python 20行代码检测人脸是否佩戴口罩
+————————————————
+版权声明：本文为CSDN博主「Python实用宝典」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/u010751000/article/details/106747149
