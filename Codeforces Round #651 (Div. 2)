@@ -1,0 +1,515 @@
+Codeforces Round #651 (Div. 2)
+
+清泠， 2020-06-23 11:36:25  7  收藏  原力计划
+分类专栏： CodeForces 思维 二分
+版权
+这里写下ABCDE吧，这次思路感觉不是怎么很明确
+
+传送门
+
+
+
+A. Maximum GCD
+主要思路：n/2即可
+
+解题思路：
+由于让求1 <= x < y <= n, 求 max(gcd(x,y))， 那么如果x = k, 那么最大情况, y = 2k， 这样他们的最大公约数就为k
+因此最大值就是n / 2（倍数关系，二倍是最小的）
+代码：
+#include <iostream>
+#include <cstdio>
+#include <cstring>
+#include <algorithm>
+#include <cmath>
+ 
+using namespace std;
+ 
+typedef long long ll;
+ 
+const int N = 100010, M = 200010;
+ 
+int main(){
+    int t;
+    scanf("%d",&t);
+    while(t--){
+        int n;
+        scanf("%d",&n);
+        int k = max(n/2,1);
+        printf("%d\n",k);
+    }
+    return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+
+
+B. GCD Compression
+主要思路：我们首先删除% 2 不是偶数的个数，然后判断下删除的数值，然后进行两两合并，让gcd == 2即可
+
+解题思路：
+首先这个答案肯定是存在的
+然后题目中让我们求gcd > 1 即可，那我们可以想到 让gcd 至少为2即可
+因为要进行两两合并，那么我们最终让他们最终都是偶数，那么他们的gcd至少都为2，所以我们根据这一性质来进行求解
+我们首先 %2， 来计算出奇数和偶数的数目，然后如果奇数偶数的个数都是奇数，那么我们各删除一个，否则我们判断奇数偶数的个数，删除2个。
+然后我们存储奇数和偶数的下标，两个两个组合输出即可。
+代码：
+#include <iostream>
+#include <cstdio>
+#include <cstring>
+#include <algorithm>
+#include <cmath>
+
+using namespace std;
+
+typedef long long ll;
+
+const int N = 100010, M = 200010;
+
+int a[N];
+int ans[N] ,res[N];
+
+int main(){
+    int t;
+    scanf("%d",&t);
+    while(t--){
+        int n;
+        scanf("%d",&n);
+        n *= 2;
+        for (int i = 1; i <=  n; i++){
+            scanf("%d",&a[i]);
+        }
+        int x = 0, y = 0;
+
+        for (int j = 1; j <= n; j ++){
+            if (a[j] % 2 == 1) x++;
+            else y ++;
+        }
+
+        int xx =0 , yy = 0;
+
+        if (x % 2 == 1){
+            xx = 1;
+            yy = 1;
+        }
+        else{
+            if (x >= 2) xx = 2;
+            else yy = 2;
+        }
+
+        for (int i = 1; i <= n; i++){
+            if (xx && a[i] % 2 == 1){
+                a[i] = 0;
+                xx --;
+            }
+            if (yy && a[i] % 2 == 0 && a[i] != 0){
+                a[i] = 0;
+                yy --;
+            }
+        }
+        int cnt1= 0, cnt2= 0;
+        for (int i = 1; i <= n; i++){
+            if (a[i] && a[i] % 2 == 1){
+                ans[cnt1 ++] = i;
+            }
+            if (a[i] && a[i] % 2 == 0){
+                res[cnt2 ++] = i;
+            }
+        }
+        for (int i = 0; i < cnt1; i+= 2){
+            printf("%d %d\n",ans[i],ans[i + 1]);
+        }
+        for (int i = 0; i < cnt2; i += 2){
+            printf("%d %d\n",res[i],res[i + 1]);
+        }
+    }
+    return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+
+
+C. Number Game
+主要思路： 首先判断数值是否为奇数或者是2，如果是这样，那么Ashishgup肯定赢，否则再判断，如果是2^x 或者 该数不能被奇数除，那么FastestFinger赢，否则Ashishgup赢。
+
+解题思路：
+首先题目中说明如果是奇数的话，可以除自身，如果到达1，那么将不能移动，不能移动的人算输，因此很容易得出如果n为奇数或者为2，那么先手肯定赢。
+接下来我们考虑2^x这种形式，它没有奇数可除，因此只能执行 - 1，那么它将变为奇数，后手赢。
+剩下的情况就为2^x * y，这种情势，这时的y为奇数，如果让2^x 为 2，那么肯定是不符合的，否则都符合，因此，如果符合，那么先手获胜，如果不符合后手获胜。
+代码：
+#include <iostream>
+#include <cstdio>
+#include <cstring>
+#include <algorithm>
+#include <cmath>
+
+using namespace std;
+
+typedef long long ll;
+
+const int N = 100010, M = 200010;
+
+int main(){
+    int t;
+    scanf("%d",&t);
+    while(t--){
+        int n;
+        scanf("%d",&n);
+        if (n == 1){
+            puts("FastestFinger");
+            continue;
+        }
+        if (n % 2 == 1 || n == 2){
+            puts("Ashishgup");
+        }
+        else{
+            // 4 6 10 14 
+            int xx = n;
+            while(xx % 2 == 0) xx/=2;
+            if (xx == 1){
+                puts("FastestFinger");
+                continue;
+            }
+            int  x = 0;
+            for (int i = sqrt(n); i >= 2; i --){
+                if (n % i == 0){
+                    if ((n / i) % 2 == 0 && (n / i) != 2){
+                        x ++;
+                    }
+                }
+            }
+            if (x) puts("Ashishgup");
+            else puts("FastestFinger");
+        }
+    }
+    return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+
+
+D. Odd-Even Subsequence
+主要思路： 二分思想，找最大值中的最小值，也就是奇数偶数位上最大值中较小的值。那么我们直接二分，判断是否符合条件即可，这里的二分函数check十分的巧妙(看标程的)。
+
+解题思路：
+首先我们1 - 1e9二分找最小值，这里的关键就是check函数。
+check函数第一个参数为当前的数值，第二个是位置（奇偶位，0代表要进行奇数位，1代表要进行偶数位）
+那么只要我门奇数偶数位置上有一个符合情况，那么我们就符合条件，最终判断num >= k是否成立即可。
+代码：
+#include <iostream>
+#include <cstdio>
+#include <cstring>
+#include <algorithm>
+#include <cmath>
+
+using namespace std;
+
+typedef long long ll;
+
+const int N = 200010, M = 200010;
+
+int a[N];
+int n, k;
+
+bool check(int x, int cur){
+    int num = 0;
+    for (int i = 1; i <= n; i ++){
+        if (!cur){
+            num ++;
+            cur ^= 1;
+        }
+        else{
+            if (a[i] <= x){
+                num ++;
+                cur ^= 1;
+            }
+        }
+    }
+    return num >= k;
+}
+
+int binsearch(){
+    int l = 1, r = 1e9;
+    while(l < r){
+        int mid = l + r >> 1;
+        if (check(mid,1) || check(mid,0)){
+            r = mid;
+        }
+        else{
+            l = mid + 1;
+        }
+    }
+    return l;
+}
+
+int main(){
+    scanf("%d%d",&n,&k);
+    for (int i = 1; i <= n; i++){
+        scanf("%d",&a[i]);
+    }
+    int res = binsearch();
+    printf("%d\n",res);
+    return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+
+
+E . Binary Subsequence Rotation
+主要思路： 我们要向右进行移动，那么如果我们的子序列是010101 或者 101010 的话，那么肯定是优的，那么我们尽量找出多组即可。
+
+解题思路：
+首先我们需要判断不同的位置，我们以第一个字符串为准，如果第一个字符串当前位置为0，第二个为1那么，我们应该增加0开头的序列
+首先我们应该考虑是否有1开头的，如果有1开头的我们首先填入1开头的后面，对于1开头的我们也有2种情况，是以原本的1010作为基础的还是新建的（例如10101,1），我们首先考虑加入10101中，再考虑加入1中。
+如果没有，那么我们要重新创建，如果有0101这样的串那么我们在这个的基础上继续创建，如果没有，那么我们创建新的0子串
+对于1也是如此的操作
+最终判断是否有单独存在的即可。
+代码：
+#include <iostream>
+#include <cstdio>
+#include <cstring>
+#include <algorithm>
+#include <cmath>
+
+using namespace std;
+
+typedef long long ll;
+
+const int N = 100010, M = 200010;
+
+int main(){
+    int n;
+    scanf("%d",&n);
+    string st1, st2;
+    cin>>st1;
+    cin>>st2;
+    int x = 0, y = 0, x1 = 0, x0 = 0, y1 = 0, y0 = 0;
+    for (int i = 0; i < n; i ++){
+    	if (st1[i] != st2[i]){
+    		if (st1[i] == '0'){
+    			if (x1 > 0){
+    				x1 --;
+    			}
+    			else if (y1 > 0){
+    				y1 --;
+    			}
+    			else if (x - x0 - y0> 0){ // 判断是否有完成的子串
+    				x0 ++;
+    			}
+    			else{
+    				y0 ++;
+    				x++;
+    			}
+    		}
+    		else{
+    			if (x0 > 0){
+    				x0 --;
+    			}
+    			else if (y0 > 0){
+    				y0 --;
+    			}
+    			else if ((y - x1 - y1) > 0){ // 判断是否有完成的子串
+    				x1 ++;
+    			}
+    			else{
+    				y1 ++;
+    				y++;
+    			}
+    		}
+    	}
+    	
+    }
+    if (x0 || x1 || y1 || y0) puts("-1"); // 有单独的（0 和 1的数目不相同）
+    else printf("%d\n",x + y);
+    return 0;
+}
+————————————————
+版权声明：本文为CSDN博主「清泠，」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/LiangNiuMu/article/details/106917984
