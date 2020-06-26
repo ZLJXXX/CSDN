@@ -1,0 +1,173 @@
+C++读写文件
+C++读写文件
+前言
+普通文件读写
+按字节读取文件数据
+转换成流输出
+补：在文件中查找数据或字符串
+写文件
+结语
+C++读写文件
+做作业的时候因为读写文件，被卡了两天。虽然看起来是简单的几个字，但是文件种类不同、格式有别，具体问题具体分析时总感觉并不得心应手。所以对于作业中出现的文件读写做一个汇总。
+
+前言
+尽量不对原文件作出修改，查找文件行列数时，可用阅读软件予以帮助。
+eg. Notepad++、UE。
+
+普通文件读写
+此类文本，行列对齐，格式规范，中间以空格/tab分隔
+
+文件格式如上图。
+
+const int ROW = 7;
+const int VOL = 2;
+double d[ROW][VOL];//定义数组存放，或者使用结构体
+ ifstream in;
+ in.open("D:/data.txt");
+for (int i = 0; i < ROW; ++i)
+ {
+  for (int j = 0; j < VOL; ++j)
+  {
+   in >> d[i][j];
+  }
+ }
+ in.close();//关闭文件
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+将数据存入数组备用。
+
+按字节读取文件数据
+有些文件格式，如广播星历、精密星历，每个数据固定占有几个字节，此时无法再像上文一样直接读取。
+
+
+string fileName = "D:/data.txt";
+ fstream file;
+ file.open(fileName);//读入文件  
+ if (!file)
+ {
+  cout << "文件地址错误！打开失败！" << endl;
+  return false;
+ }
+getline(file, line);//先读入一行
+double a = atof(line.substr(4, 19).c_str());
+  double b = atof(line.substr(23, 19).c_str());
+  double c = atof(line.substr(42, 19).c_str());
+  double d = atof(line.substr(61, 19).c_str());
+  //逐个赋值，前一个数字为开始列数，后一个数字为几个字节
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+转换成流输出
+文件格式见上图。
+若文件数据中间没有空格，可在数据中加入，再转化成流输出。
+
+template <class Type>
+Type stringToNum(const string& str)//将string转换为数字  
+{
+ istringstream iss(str);
+ Type num;
+ iss >> num;
+ return num;
+}
+string fileName = "D:/data.txt";
+ fstream file;
+ file.open(fileName);//读入文件  
+ if (!file)
+ {
+  cout << "文件地址错误！打开失败！" << endl;
+  return false;
+ }
+ string line;//临时储存数据文件的每一行  
+ istringstream str_stream;
+ 
+ getline(file, line);
+  string a
+  int b, c, d;
+  double  e;
+
+  line.insert(13, " ");//插入分割空格  
+  line.insert(33, " ");
+  line.insert(53, " ");
+  str_stream = istringstream(line);//转换成流  
+  str_stream >> a >> b >> c >> d
+   >> e ;
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+补：在文件中查找数据或字符串
+if (line[i] == 'C')  //检查字符串是否在该行中，如果在，则赋值  
+    {
+    a = line.substr(0, 3).c_str();
+     double b= atof(line.substr(5, 14).c_str());
+     double c = atof(line.substr(21, 14).c_str())
+     }
+1
+2
+3
+4
+5
+6
+写文件
+ofstream file_result;
+     file_result.open("D:data.txt", ios::app);
+     file_result.flags(ios::fixed);
+     file_result.precision(3); //设置保留小数位数  
+     file_result << t << "\t" << a<< "\t" << b << "\t" << c << endl;
+1
+2
+3
+4
+加入ios::app可在原来文件基础上写入文件，删去则会覆盖文件写入。
+
+结语
+写出来后不用翻找是很好的，希望有所帮助。
+（及时更新中）
+————————————————
+版权声明：本文为CSDN博主「i eternal」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/weixin_45960608/article/details/106946267
