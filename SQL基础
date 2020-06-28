@@ -1,0 +1,299 @@
+SQL基础
+
+yanbingzn 2020-06-26 09:10:27  794  收藏 6  原力计划
+分类专栏： 数据库相关 文章标签： sql数据库
+版权
+参考文档: SQL 教程
+
+SQL简介
+SQL 是用于访问和处理数据库的标准的计算机语言。
+
+什么是 SQL
+SQL 指结构化查询语言
+SQL 使我们有能力访问数据库
+SQL 是一种 ANSI 的标准计算机语言
+注：ANSI，美国国家标准化组织
+
+DBMS - 数据库管理系统（Database Management System）
+数据库管理系统是一种可以访问数据库中数据的计算机程序。
+
+DBMS 使我们有能力在数据库中提取、修改或者存贮信息。
+
+不同的 DBMS 提供不同的函数供查询、提交以及修改数据。
+
+RDBMS- 关系数据库管理系统（Relational Database Management System）
+RDBMS 是 SQL 的基础，同样也是所有现代数据库系统的基础，比如 MS SQL Server, IBM DB2, Oracle, MySQL 以及 Microsoft Access。
+
+RDBMS 中的数据存储在被称为表（tables）的数据库对象中。
+
+表是相关的数据项的集合，它由列和行组成。
+
+DML 和 DDL
+可以把 SQL 分为两个部分：数据操作语言 (DML) 和 数据定义语言 (DDL)。
+
+SQL (结构化查询语言)是用于执行查询的语法。但是 SQL 语言也包含用于更新、插入和删除记录的语法。
+
+查询和更新指令构成了 SQL 的 DML 部分：
+
+SELECT - 从数据库表中获取数据
+UPDATE - 更新数据库表中的数据
+DELETE - 从数据库表中删除数据
+INSERT INTO - 向数据库表中插入数据
+SQL 的数据定义语言 (DDL) 部分使我们有能力创建或删除表格。我们也可以定义索引（键），规定表之间的链接，以及施加表间的约束。
+
+SQL 中最重要的 DDL 语句:
+
+CREATE DATABASE - 创建新数据库
+ALTER DATABASE - 修改数据库
+CREATE TABLE - 创建新表
+ALTER TABLE - 变更（改变）数据库表
+DROP TABLE - 删除表
+CREATE INDEX - 创建索引（搜索键）
+DROP INDEX - 删除索引
+注意事项
+大小写问题
+一定要记住，SQL 对大小写不敏感！
+
+SQL 语句后面的分号
+某些数据库系统要求在每条 SQL 命令的末端使用分号。
+
+分号是在数据库系统中分隔每条 SQL 语句的标准方法，这样就可以在对服务器的相同请求中执行一条以上的语句。如果使用的是 MS Access 和 SQL Server 2000，则不必在每条 SQL 语句之后使用分号，不过某些数据库软件要求必须使用分号。
+
+基础语法
+SELECT
+SELECT 语句用于从表中选取数据。
+
+结果被存储在一个结果表中（称为结果集）。
+
+SELECT 列名称 FROM 表名称
+1
+以及：
+
+SELECT * FROM 表名称
+1
+**注释：**SQL 语句对大小写不敏感。SELECT 等效于 select。
+
+SELECT DISTINCT
+在表中，可能会包含重复值。这并不成问题，不过，有时您也许希望仅仅列出不同（distinct）的值。
+
+关键词 DISTINCT 用于返回唯一不同的值。
+
+SELECT DISTINCT 列名称 FROM 表名称
+1
+WHERE
+如需有条件地从表中选取数据，可将 WHERE 子句添加到 SELECT 语句。
+
+SELECT 列名称 FROM 表名称 WHERE 列 运算符 值
+1
+下面的运算符可在 WHERE 子句中使用：
+
+操作符	描述
+=	等于
+<>	不等于
+>	大于
+<	小于
+>=	大于等于
+<=	小于等于
+BETWEEN	在某个范围内
+LIKE	搜索某种模式
+**注释：**在某些版本的 SQL 中，操作符 <> 可以写为 !=。
+
+引号的使用
+
+SQL 使用单引号来环绕文本值（大部分数据库系统也接受双引号）。如果是数值，请不要使用引号。
+
+AND 和 OR 运算符
+
+AND 和 OR 运算符用于基于一个以上的条件对记录进行过滤。
+
+AND 和 OR 可在 WHERE 子语句中把两个或多个条件结合起来。
+
+如果第一个条件和第二个条件都成立，则 AND 运算符显示一条记录。
+
+如果第一个条件和第二个条件中只要有一个成立，则 OR 运算符显示一条记录。
+
+GROUP BY
+GROUP BY 语句用于结合合计函数，根据一个或多个列对结果集进行分组。
+
+SELECT column_name, aggregate_function(column_name)
+FROM table_name
+WHERE column_name operator value
+GROUP BY column_name
+1
+2
+3
+4
+GROUP BY 一个以上的列:
+
+我们也可以对一个以上的列应用 GROUP BY 语句，就像这样：
+
+SELECT Customer,OrderDate,SUM(OrderPrice) FROM Orders
+GROUP BY Customer,OrderDate
+1
+2
+HAVING
+在 SQL 中增加 HAVING 子句原因是，WHERE 关键字无法与合计函数一起使用。
+
+SELECT column_name, aggregate_function(column_name)
+FROM table_name
+WHERE column_name operator value
+GROUP BY column_name
+HAVING aggregate_function(column_name) operator valu
+1
+2
+3
+4
+5
+ORDER BY
+ORDER BY 语句用于根据指定的列对结果集进行排序。
+
+ORDER BY 语句默认按照升序对记录进行排序。
+
+如果希望按照降序对记录进行排序，可以使用 DESC 关键字。
+
+**注意：**使用多列进行排序时，左边的列的排序优先级高于右侧，
+
+示例：
+
+SELECT exp1, exp2 FROM table1 ORDER BY exp1, exp2 DESC
+1
+先对exp1进行升序排序，若exp1相同，则按照exp2进行降序排序；若exp1没有重复，则不会对exp2排序。
+
+INSERT INTO
+INSERT INTO 语句用于向表格中插入新的行。
+
+INSERT INTO 表名称 VALUES (值1, 值2,....)
+1
+我们也可以指定所要插入数据的列：
+
+INSERT INTO table_name (列1, 列2,...) VALUES (值1, 值2,....)
+1
+UPDATE
+Update 语句用于修改表中的数据。
+
+UPDATE 表名称 SET 列名称 = 新值 WHERE 列名称 = 某值
+1
+DELETE
+DELETE 语句用于删除表中的行。
+
+DELETE FROM 表名称 WHERE 列名称 = 值
+1
+删除所有行
+
+可以在不删除表的情况下删除所有的行。这意味着表的结构、属性和索引都是完整的：
+
+DELETE FROM table_name
+1
+或者：
+
+DELETE * FROM table_name
+1
+CREATE DATABASE
+CREATE DATABASE 用于创建数据库。
+
+CREATE DATABASE database_name
+1
+CREATE TABLE
+CREATE TABLE 语句用于创建数据库中的表。
+
+CREATE TABLE 表名称
+(
+列名称1 数据类型,
+列名称2 数据类型,
+列名称3 数据类型,
+....
+)
+1
+2
+3
+4
+5
+6
+7
+数据类型（data_type）规定了列可容纳何种数据类型。下面的表格包含了SQL中最常用的数据类型：
+
+数据类型	描述
+integer(size)
+int(size)
+smallint(size)
+tinyint(size)	仅容纳整数。在括号内规定数字的最大位数。
+decimal(size,d)
+numeric(size,d)	容纳带有小数的数字。“size” 规定数字的最大位数。“d” 规定小数点右侧的最大位数。
+char(size)	容纳固定长度的字符串（可容纳字母、数字以及特殊字符）。在括号中规定字符串的长度。
+varchar(size)	容纳可变长度的字符串（可容纳字母、数字以及特殊的字符）。在括号中规定字符串的最大长度。
+date(yyyymmdd)	容纳日期。
+ALTER TABLE
+ALTER TABLE 语句用于在已有的表中添加、修改或删除列。
+
+如需在表中添加列，请使用下列语法:
+
+ALTER TABLE table_name
+ADD column_name datatype
+1
+2
+要删除表中的列，请使用下列语法：
+
+ALTER TABLE table_name 
+DROP COLUMN column_name
+1
+2
+**注释：**某些数据库系统不允许这种在数据库表中删除列的方式 (DROP COLUMN column_name)。
+
+要改变表中列的数据类型，请使用下列语法：
+
+ALTER TABLE table_name
+ALTER COLUMN column_name datatype
+1
+2
+CREATE INDEX
+CREATE INDEX 语句用于在表中创建索引。
+
+在不读取整个表的情况下，索引使数据库应用程序可以更快地查找数据。
+
+您可以在表中创建索引，以便更加快速高效地查询数据。
+
+用户无法看到索引，它们只能被用来加速搜索/查询。
+
+注释：更新一个包含索引的表需要比更新一个没有索引的表更多的时间，这是由于索引本身也需要更新。因此，理想的做法是仅仅在常常被搜索的列（以及表）上面创建索引。
+
+CREATE INDEX 语法:
+
+在表上创建一个简单的索引。允许使用重复的值：
+
+CREATE INDEX index_name
+ON table_name (column_name [DESC])
+1
+2
+注释：“column_name” 规定需要索引的列。
+
+SQL CREATE UNIQUE INDEX 语法:
+
+在表上创建一个唯一的索引。唯一的索引意味着两个行不能拥有相同的索引值。
+
+CREATE UNIQUE INDEX index_name
+ON table_name (column_name)
+1
+2
+CREATE VIEW
+什么是视图？
+
+在 SQL 中，视图是基于 SQL 语句的结果集的可视化的表。
+
+视图包含行和列，就像一个真实的表。视图中的字段就是来自一个或多个数据库中的真实的表中的字段。我们可以向视图添加 SQL 函数、WHERE 以及 JOIN 语句，我们也可以提交数据，就像这些来自于某个单一的表。
+
+**注释：**数据库的设计和结构不会受到视图中的函数、where 或 join 语句的影响。
+
+SQL CREATE VIEW 语法:
+
+CREATE VIEW view_name AS
+SELECT column_name(s)
+FROM table_name
+WHERE condition
+1
+2
+3
+4
+**注释：**视图总是显示最近的数据。每当用户查询视图时，数据库引擎通过使用 SQL 语句来重建数据。
+————————————————
+版权声明：本文为CSDN博主「yanbingzn」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/i_silence/article/details/106965856
