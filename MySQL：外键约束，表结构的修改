@@ -1,0 +1,230 @@
+MySQL：外键约束，表结构的修改
+
+天上小鱼的猫 2020-07-06 12:14:45  762  收藏 1  原力计划
+分类专栏： 数据库 Java Web 文章标签： 数据库mysql
+版权
+文章目录
+一、关于MySQL的范式 建表要求
+1. 非空约束
+2. 唯一约束
+3. 主键约束
+4. 默认约束
+5.外键约束
+表与表之间的关系
+练习
+二、修改数据库表 表的结构 DDL语句
+1.更改表名
+2.删除字段
+3.改变约束条件
+4.修改字段类型
+一、关于MySQL的范式 建表要求
+MySQL中的约束：
+
+非空约束
+唯一约束
+主键约束
+默认约束
+外键约束
+1. 非空约束
+not null 表示字段不可为null
+null 表示字段可以为null
+
+create table tb3(
+	name varchar(20) not null,
+	age int unsigned null
+);
+1
+2
+3
+4
+2. 唯一约束
+用于保证表中记录的唯一性，
+可以不是主键，可空
+每张数据表可存在多个唯一约束
+
+create table tb3(
+	name varchar(20) not null unique key,
+	age int unsigned
+);
+1
+2
+3
+4
+3. 主键约束
+每张表都会有一个主键（有且仅有一个），主键是这张表唯一标识。
+主键可以代表该表中所存数据，主键不能重复，且可有多个字段，多个字段形成的主键是联合主键。
+一般情况下，以id类的字段为主键，
+【主键自动进行非空约束】
+
+create table tb3(
+	id varchar(20) auto_increment primary key,
+	name varchar(20) not null
+);
+1
+2
+3
+4
+插入数据时，可对id字段跳过处理
+也可直接给id赋予属性（添加时，以最后的id值为准）
+
+【自增一定是主键，主键不一定自增】
+
+4. 默认约束
+在给表中添加字段时如若对该字段没有处理，则该字段设为自动的默认值
+
+create table tb3(
+	id int primary key,
+	name varchar(20) not null unique key,
+	sex enum('M','F') default 'M'
+);
+1
+2
+3
+4
+5
+5.外键约束
+建立在两张表以上的约束Foreign key 关键字
+父表和子表：具备相同的存储引擎，而MySQL默认存储引擎是Innodb
+外键列和参照列都必须要有索引，如果没有，那么MySQL会自动为其创建索引。
+
+//创建父表
+create table fu(
+	id int primary key,
+	username varchar(20) not null unique key
+);
+
+//创建子表(school的id是参照列，class的id是外键列)
+create table zi(
+	cid int primary key,
+	cname varchar(20) not null unique key,
+	id int,
+	foreign key(id) references fu(id)
+);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+表与表之间的关系
+一对一 zi 对应 fu 一个孩子只能对应一个父亲
+一对多 fu 对应 zi 一个父亲是可以有多个孩子
+
+练习
+User 表 用户表
+id username password roleid
+
+Role 表 角色表
+Roleid rolename
+
+Menu 表 菜单表
+Menuid menuname menuerl fatherID
+
+Funs 表 功能表
+Funid funname funurl menuid
+
+一个用户对应一个角色 一对一关系 roleid 外键列
+一个角色对应多个用户 一对多关系 通常情况下使用外键来进行处理 roleid参照列
+
+一个角色对应多个菜单
+一个菜单对应多个角色 多对多关系
+
+处理方案：
+做一张中间表 Role_Menu
+roleid menuid 就可以作为 联合主键
+Role_Menu roleId 外键 参照 Role roleId
+Role_Menu menuid 外键 参照Menu menuId
+
+注意： 如果表与表之间有关联关系，那么就不能直接删除父表中的记录，要先删除子表中的记录，然后再删除父表。
+
+对一个数据列建立的约束，称为列级约束
+对多个数据建立的约束，称为表级约束
+列级约束既可以在列定义时声明，也可以在列定义后声明表级约束只能在列级定义后声明
+二、修改数据库表 表的结构 DDL语句
+1.更改表名
+//更改表名
+alter table table_name add;
+
+//添加字段 varchar password ---在username 的字段之后添加
+alter table tb1 add password varchar(20) not null after username;
+
+//添加一个字段 pid int 在id字段之前
+alter table tb1 add pid int not null first;
+
+//给tb1这张表添加多个列 salary int birthday varchar(20)
+alter table tb1 add (salart int,birthday varchar(20));
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+2.删除字段
+//删除表中的字段
+alter table table_name drop;
+
+//删除pid这一列
+alter table tb1 drop pid;
+
+//删除salary,birthday这两行
+alter table tb1 drop salary,drop birthday;
+1
+2
+3
+4
+5
+6
+7
+8
+3.改变约束条件
+//给id字段添加主键约束
+alter table tb1 add primary key(id);
+
+//给username字段添加唯一约束
+alter table tb1 add unique key(username);
+
+//删除约束
+//删除username的唯一约束
+alter table tb1 drop index username;
+
+//删除主键约束
+alter table tb1 drop primary key;
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+4.修改字段类型
+//修改id类型为varchar类型
+alter table tb1 modify id varchar(20) frist;
+1
+2
+注意：在修改列中的单位时，如果表中存有数据的话，大的单位转化成晓得单位有可能造成数据的丢失
+
+//修改username 这个字段的名称user_name
+alter table tb1 change username user_name varchar(20);
+
+//修改数据表的名字
+rename table tb1 to tb2;
+————————————————
+版权声明：本文为CSDN博主「天上小鱼的猫」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_44668555/article/details/107102823
