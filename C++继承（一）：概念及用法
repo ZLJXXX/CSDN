@@ -1,0 +1,512 @@
+C++继承（一）：概念及用法
+
+fighting QAQ 2020-07-08 16:02:25  26  收藏 2  原力计划
+分类专栏： C++ 文章标签： 面向对象编程封装多态
+编辑 版权
+C++继承（一）
+【本章内容】
+C++继承（一）
+1.继承的概念及定义
+1.1继承的概念
+1.2继承的定义
+1.2.1定义格式
+1.2.22继承关系和访问限定符
+2.基类和派生类对象赋值转换
+3.继承中的作用域（隐藏）
+4.派生类的默认成员函数
+5.继承与静态成员
+1.继承的概念及定义
+1.1继承的概念
+继承(inheritance)机制是面向对象程序设计使代码可以复用的最重要的手段，它允许程序员在保持原有类特性的基础上进行扩展，增加功能，这样产生新的类，称派生类。继承呈现了面向对象程序设计的层次结构，体现了由简单到复杂的认知过程。以前我们接触的复用都是函数复用，继承是类设计层次的复用。 我认为：继承就是类方法的复用
+
+#define _CRT_SECURE_NO_WARNINGS
+#include<iostream>
+#include<string>
+using namespace std;
+class Person
+{
+public:
+	void Print()
+	{
+		cout << "name:" << _name << endl;
+		cout << "age:" << _age << endl;
+	}
+protected:
+	string _name = "peter"; // 姓名
+	int _age = 18; // 年龄
+};
+// 继承后父类的Person的成员（成员函数+成员变量）都会变成子类的一部分。这里体现出了Teacher复用了Person的成员。下面我们使用监视窗口查看Teacher对象，可以看到变量的复用。调用Print可以看到成员函数的复用。
+
+class Teacher : public Person
+{
+protected:
+	int _jobid; // 工号
+};
+int main()
+{
+	Teacher t;
+	t.Print();
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+1.2继承的定义
+1.2.1定义格式
+从上面的这个简单的继承代码来进行分析，Person是父类，也称作基类。Teacher是子类，也称为派生类。
+
+
+1.2.22继承关系和访问限定符
+
+在实际运用中一般使用都是public继承，几乎很少使用protetced/private继承，也不提倡使用protetced/private继承，因为protetced/private继承下来的成员都只能在派生类的类里面使用，实际中扩展维护性不强。
+
+2.基类和派生类对象赋值转换
+#define _CRT_SECURE_NO_WARNINGS
+#include<iostream>
+#include<string>
+using namespace std;
+class Person
+{
+protected:
+	string _name = "小周"; // 姓名
+	string _sex = "男"; // 性别
+	int _age = 18; // 年龄
+};
+class Student : public Person
+{
+public:
+	void Print()
+	{
+		cout << " 姓名:" << _name << endl;
+		cout << " 性别:" << _sex << endl;
+		cout << " 年龄:" << _age << endl;
+		cout << " 学号:" << _No << endl;
+	}
+protected:
+	int _No = 001; // 学号
+};
+void Test()
+{
+	// 1.子类对象可以赋值给父类对象/指针/引用
+	Student sobj;
+	Person pobj;
+	sobj.Print();
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+1.派生类对象 可以赋值给 基类的对象 / 基类的指针 / 基类的引用。这里有个形象的说法叫切片或者切割。寓意把派生类中父类那部分切来赋值过去。
+**切片：Student类继承person类，则其也继承了父类的对象，但是在操作子类中父类对象时仍要调用的是父类的方法，各管各的。
+派生类对象可以给基类对象赋值，但是基类对象不能给派生类赋值
+
+
+3.继承中的作用域（隐藏）
+在继承体系中基类和派生类都有独立的作用域。
+子类和父类中有同名成员，子类成员将屏蔽父类对同名成员的直接访问，这种情况叫隐藏，也叫重定义。（在子类成员函数中，可以使用 基类::基类成员 显示访问）
+需要注意的是如果是成员函数的隐藏，只需要函数名相同就构成隐藏。
+注意在实际中在继承体系里面最好不要定义同名的成员
+“隐藏”：子类继承父类，若父类的方法子类没有，则系统会默认调用父类方法，若子类成员或函数已经存在，则构成隐藏，只有通过显示调用才能调用父类的方法。成员或函数名一样构成隐藏。
+
+class Person
+{
+protected:
+	string _name = "小李子"; // 姓名
+	int _num = 111; // 身份证号
+};
+class Student : public Person
+{
+public:
+	void Print()
+	{
+		cout << " 姓名:" << _name << endl;
+		cout << " 身份证号:" << Person::_num << endl;
+		cout << " 学号:" << _num << endl;
+	}
+protected:
+	int _num = 999; // 学号
+};
+void Test()
+{
+	Student s1;
+	s1.Print();
+};
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+
+隐藏和重载的区别：
+共同点：函数名相同
+不同点：隐藏不在同一作用域，而重载必须在同一作用域下
+
+4.派生类的默认成员函数
+派生类的构造函数必须调用基类的构造函数初始化基类的那一部分成员。如果基类没有默认的构造函数，则必须在派生类构造函数的初始化列表阶段显示调用。
+派生类的拷贝构造函数必须调用基类的拷贝构造完成基类的拷贝初始化。
+派生类的operator=必须要调用基类的operator=完成基类的复制。
+派生类的析构函数会在被调用完成后自动调用基类的析构函数清理基类成员。因为这样才能保证派生类
+对象先清理派生类成员再清理基类成员的顺序。
+派生类对象初始化先调用基类构造再调派生类构造。
+派生类对象析构清理先调用派生类析构再调基类的析构。
+
+1.子类的构造函数必须调用父类的构造函数方法，子类中继承基类的成员变量必须显示调用基类的方法。且子类中继承的基类对象属于自己，并不和基类的对象一样
+
+class Person
+{
+public:
+	Person(const char* name = "peter")
+		:_name(name)
+	{
+		cout << "Person()" << endl;
+	}
+protected:
+	string _name; // 姓名
+};
+class Student : public Person
+{
+public:
+	Student(const char* name, int num)
+		:Person(name)
+		, _num(num)
+	{
+		cout << "Student()" << endl;
+	}
+protected:
+	int _num; // 学号
+};
+void Test()
+{
+	Student s("jack",18);
+	Person p;
+};
+
+int main()
+{
+	Test();
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+
+
+2.同理，子类对象拷贝构造时，拷贝继承父类的对象必须先显示调用父类的构造函数
+
+
+3.拷贝构造也是如此，对于继承父类的对象必须先显示调用父类的拷贝构造
+
+
+4.析构函数其实其底层函数名相同，不用再显示调用，系统会默认生成
+
+完整代码：
+
+#define _CRT_SECURE_NO_WARNINGS
+#include<iostream>
+#include<string>
+using namespace std;
+
+class Person
+{
+public:
+	Person(const char* name = "peter")
+		:_name(name)
+	{
+		cout << "Person()" << endl;
+	}
+	Person(const Person& p)
+		:_name(p._name)
+	{
+		cout << "Person(const Person& p)"<< endl;
+	}
+	Person& operator=(const Person&  P)
+	{
+		cout << "Person& operator=(const Person&  P)" << endl;
+		if (this != &P)
+		{
+			_name = P._name;
+		}
+		return *this;
+	}
+	~Person()
+	{
+		cout << "~Person()" << endl;
+	}
+protected:
+	string _name; // 姓名
+};
+class Student : public Person
+{
+public:
+	Student(const char* name, int num)
+		:Person(name)
+		,_num(num)
+	{
+		cout << "Student()" << endl;
+	}
+	Student(const Student& s)
+		:Person(s)
+		, _num(s._num)
+	{
+		cout << "Student(const Student& s)" << endl;
+	}
+	Student& operator=(const Student&  s)
+	{
+		cout << "Student& operator=(const Student&  s)" << endl;
+		if (this != &s)
+		{
+			Person::operator=(s);
+			_num = s._num;
+		}
+		return *this;
+	}
+	~Student()
+	{
+		cout << "~Student()" << endl;
+	}
+protected:
+	int _num; // 学号
+};
+void Test()
+{
+	Student s("jack",18);
+	Student s2(s);
+	Student s3("rose", 17);
+	s = s3;
+};
+int main()
+{
+	//Test();
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+5.继承与静态成员
+基类定义了static静态成员，则整个继承体系里面只有一个这样的成员。无论派生出多少个子类，都只有一个static成员实例 。普通对象继承后，子类继承的对象和基类对象并不相同，继承完以后各干各的（克隆人和本体无关），而静态成员就只有一份，继承完以后还是他
+
+class Person
+{
+public:
+	Person() { ++_count; }
+protected:
+	string _name; // 姓名
+public:
+	static int _count; // 统计人的个数。
+};
+int Person::_count = 0;
+class Student : public Person
+{
+protected:
+	int _stuNum; // 学号
+};
+class Graduate : public Student
+{
+protected:
+	string _seminarCourse; // 研究科目
+};
+void TestPerson()
+{
+	Student s1;
+	Student s2;
+	Student s3;
+	Graduate s4;
+	cout << " 人数 :" << Person::_count << endl;
+	Student::_count = 0;
+	cout << " 人数 :" << Person::_count << endl;
+}
+
+int main()
+{
+	//Test();
+	TestPerson();
+	system("pause");
+	return 0;
+}
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/107203725
