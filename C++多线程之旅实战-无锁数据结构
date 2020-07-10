@@ -1,0 +1,127 @@
+C++多线程之旅实战-无锁数据结构
+
+或许 没有 2020-07-10 20:27:37  4  收藏  原力计划
+分类专栏： C++多线程 文章标签： c++多线程
+版权
+目录
+前言
+实例
+无锁数据结构的原则
+总结
+前言
+前面的自旋锁可以实现非阻塞数据结构，自旋锁的优点就是在于线程一直处于执行状态，而且线程不需要唤醒，执行效率较高。但是会一直占用CPU资源，导致资源的浪费。但是还有一种无锁数据结构是，是可以实现多于一个线程的并发地访问此数据结构。
+
+无锁数据结构的优点与缺点
+
+可以实现最大程度的并发，有可能一个线程必须阻塞，并可以继续前等待另一个线程完成其操作；
+强健壮性，当一个线程在持有锁的时候终止，那么这个数据结构将会被永久破坏，但是无锁数据结构终止时，就不会丢失任何数据。
+实例
+template<typename T>
+class lock_free_stack {
+private:
+	struct node
+	{
+		T data;
+		node* next;
+		node(T const& data_) :
+			data(data_) {}
+	};
+
+	std::atomic<node*> head;
+
+public:
+	void push(T const& data) {
+		node* const new_node = new node(data);
+		new_node->next = head.load();
+		while (!head.compare_exchange_weak(new_node->next, new_node));
+	}
+
+	void pop(T& result) {
+		node* old_head = head.load();
+		while (!head.compare_exchange_weak(old_head, old_head->next));
+		result = old_head->data;
+	}
+
+	std::shared_ptr<T> pop() {
+		node* old_head = head.load();
+		while (old_head && !head.compare_exchange_weak(old_head, old_head->next));
+		return ((old_head) ? (make_shared<T>(old_head->data)) : (std::shared_ptr<T>()));
+	}
+};
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+push()
+
+首先构建一个结点，然后将结点的next设置为当前的头节点。然后循环判断，当前的头节点是否和新创建的结点一致。在单线程中可以这个判断是没有意义的，但是在多线程中这个判断就是很有意义的，因为其他的线程会对这个数据结构进行操作。
+
+// 可能的执行步骤
+	1. 线程A获取头节点的存储值，赋值给新节点的next，由于是一个原子变量导致仅有一个线程能够执行操作；
+	2. 线程B获取头节点的存储值，赋值给新节点的next，此时线程A和线程B获取的头节点是是一致的；
+	3. 线程A执行到while判断语句，新节点的next和存储的值相同，所以将头节点存储值更新为old->next，返回值ture；
+	4. 线程B执行到while语句，新节点的next与存储的值不相同，所以保存原来的值，并且返回false导致插入失败。
+1
+2
+3
+4
+5
+
+虽然线程B执行结果并不是我们需要的，但是这样可以避免线程死锁。而且在这里面唯一可能出现的异常的位置就是创建结点的位置，但是如果创建结点的时候出现异常，并不会对整个stack进行修改。
+
+pop()
+
+过程基本上和push()一致，先获取当前头节点的值，存储到old_node指针中。判断old_node以及交换条件，最终决定返回的值。
+
+// 执行步骤
+	1. 线程A判断old_node是否为空，不为空则判断当前head发生更新，如果没有更
+	   新则更新为old_node->next，则进行一次循环，则会判断为已经发生改变则循
+	   环结束；如果已经发生改变则返回false，循环结束。
+	2. 最后返回时，判断old_node是否为空，不为空则返回old_node中的值，为空则
+	   返回一个空的shared_ptr指针。
+1
+2
+3
+4
+5
+6
+无锁数据结构的原则
+使用`std::memory_order_seq_cst作为原型；
+使用无锁内存回收模式；
+当心ABA问题，需要取出内存中某时刻的数据(由用户完成)，在下一时刻比较并交换(CPU保证原子操作)，这个时间差会导致数据的变化。 假设有以下顺序事件： > 1、线程1从内存位置V中取出A > 2、线程2从内存位置V中取出A > 3、线程2进行了写操作，将B写入内存位置V > 4、线程2将A再次写入内存位置V > 5、线程1进行CAS操作，发现V中仍然是A，交换成功；
+识别忙于等待的循环以及辅助其它线程。
+总结
+C++11的原子标准并不保证其在所以平台的实现都是lock-free的(std::atomic_flag 除外)，可通过std::atomic<>::is_lock_free确认。
+
+All atomic types except for std::atomic_flag may be implemented using mutexes or other locking operations, rather than using the lock-free atomic CPU instructions. Atomic types are also allowed to be sometimes lock-free, e.g. if only aligned memory accesses are naturally atomic on a given architecture, misaligned objects of the same type have to use locks.
+————————————————
+版权声明：本文为CSDN博主「或许 没有」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/deng821776892/article/details/107262323
