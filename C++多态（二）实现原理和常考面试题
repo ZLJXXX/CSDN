@@ -1,0 +1,474 @@
+C++多态（二）实现原理和常考面试题
+
+fighting QAQ 2020-07-12 12:42:56  1  收藏
+分类专栏： C++ 文章标签： 指针多态抽象类
+编辑 版权
+C++多态（二）实现原理和常考面试题
+本篇内容
+C++多态（二）实现原理和常考面试题
+1.前言
+1.1C++11 override 和 final
+1.2 重载、覆盖(重写)、隐藏(重定义)的对比（面试常考）
+2.多态的原理
+2.1虚函数表（虚表）
+2.2多态的原理
+2.3 动态绑定与静态绑定
+3.单继承和多继承的虚函数表
+3.1单继承中的虚函数表
+3.2 多继承中的虚函数表
+4.面试常考
+1.前言
+上篇博客主要讲述了多态的概念、用法和知识点。但是遗漏了两点，我先补充一下
+
+1.1C++11 override 和 final
+C++对函数重写的要求比较严格，但是有些情况下由于疏忽，可能会导致函数名字母次序写反而无法构成重载，而这种错误在编译期间是不会报出的，只有在程序运行时没有得到预期结果才来debug会得不偿失，因此：C++11提供了override和final两个关键字，可以帮助用户检测是否重写。
+
+final：修饰虚函数，表示该虚函数不能再被继承
+class Car
+{
+public:
+ virtual void Drive() final {}
+};
+class Benz :public Car
+{
+public:
+ virtual void Drive() {cout << "Benz-舒适" << endl;}
+};
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+override: 检查派生类虚函数是否重写了基类某个虚函数，如果没有重写编译报错。
+class Car{
+public:
+ virtual void Drive(){}
+};
+class Benz :public Car {
+public:
+ virtual void Drive() override {cout << "Benz-舒适" << endl;}
+};
+1
+2
+3
+4
+5
+6
+7
+8
+1.2 重载、覆盖(重写)、隐藏(重定义)的对比（面试常考）
+
+
+2.多态的原理
+2.1虚函数表（虚表）
+先放一道面试题：：sizeof(Base)是多少？
+
+class Base
+{
+public:
+ virtual void Func1()
+ {
+ cout << "Func1()" << endl;
+ }
+private:
+ int _b = 1;
+};
+int main()
+{
+	Base b;
+	cout << sizeof(b) << endl;
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+其实结果是8个字节，我们可以观察一下
+
+除了_b成员，还多一个__vfptr放在对象的前面(注意有些平台可能会
+放到对象的最后面，这个跟平台有关)，对象中的这个指针我们叫做虚函数表指针(v代表virtual，f代表function)。一个含有虚函数的类中都至少都有一个虚函数表指针，因为虚函数的地址要被放到虚函数表中，虚函数表也简称虚表。那么派生类中这个表放了些什么呢？
+我们看下面的代码：我们增加一个派生类Derive去继Base，.Derive中重写Func1，Base再增加一个虚函数Func2和一个普通函数Func3
+
+class Base
+{
+public:
+	virtual void Func1()
+	{
+		cout << "Base::Func1()" << endl;
+	}
+	virtual void Func2()
+	{
+		cout << "Func2()" << endl;
+	}
+	void Func3()
+	{
+		cout << "Func3()" << endl;
+	}
+private:
+	int _b = 1;
+};
+class Derive : public Base
+{
+public:
+	virtual void Func1()
+	{
+		cout << "Derive::Func1()" << endl;
+	}
+	virtual void Func4()
+	{
+		cout << "Derive::Func4()" << endl;
+	}
+private:
+	int _d = 2;
+};
+int main()
+{
+	Base b;
+	Derive d;
+	cout << sizeof(b) << endl;
+	cout << sizeof(d) << endl;
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+
+总结：
+通过观察和测试，我们发现了以下几点问题：
+
+派生类对象d中也有一个虚表指针，d对象由两部分构成，一部分是父类继承下来的成员，虚表指针也就是存在部分的另一部分是自己的成员。
+基类b对象和派生类d对象虚表是不一样的，这里我们发现Func1完成了重写，所以d的虚表中存的是重写Derive::Func1，所以虚函数的重写也叫作覆盖，覆盖就是指虚表中虚函数的覆盖。重写是语法的叫法，覆盖是原理层的叫法。
+另外Func2继承下来后是虚函数，所以放进了虚表，Func3也继承下来了，但是不是虚函数，所以不会放进虚表。
+虚函数表本质是一个存虚函数指针的指针数组，这个数组最后面放了一个nullptr。
+总结一下派生类的虚表生成（重要）：
+a.先将基类中的虚表内容拷贝一份到派生类虚表中
+b.如果派生类重写了基类中某个虚函数，用派生类自己的虚函数覆盖虚表中基类的虚函数
+c.派生类自己新增加的虚函数按其在派生类中的声明次序增加到派生类虚表的最后。
+这里还有一个童鞋们很容易混淆的问题：虚函数存在哪的？虚表存在哪的？（常考）
+答：虚函数存在虚表，虚表存在对象中。注意上面的回答的错的。但是很多童鞋都是这样深以为然的。注意虚表存的是虚函数指
+针，虚函数表里方的是虚函数的函数地址，不是虚函数，虚函数和普通函数一样的，都是存在代码段的，只是他的指针又存到了虚表中。另外对象中存的不是虚表，存的是虚表指针。那么虚表存在哪的呢？其实虚表也存在代码段的，
+2.2多态的原理
+上面我们已经把虚函数重写讲清楚了。我们来具体说说多态的原理。还记得上篇博客里Func函数传Person调用Person::BuyTicket，传Student调用的是Student::BuyTicket
+
+
+观察下图的红色箭头我们看到，p是指向mike对象时，p->BuyTicket在mike的虚表中找到虚函数是
+Person::BuyTicket。
+观察下图的蓝色箭头我们看到，p是指向johnson对象时，p->BuyTicket在johson的虚表中找到虚函数
+是Student::BuyTicket。
+这样就实现出了不同对象去完成同一行为时，展现出不同的形态。
+反过来思考我们要达到多态，有两个条件，一个是虚函数覆盖，一个是对象的指针或引用调用虚函数。
+反思一下为什么？
+再通过下面的汇编代码分析，看出满足多态以后的函数调用，不是在编译时确定的，是运行起来以后到对象的中取找的。不满足多态的函数调用时编译时确认好的。（重要）
+
+2.3 动态绑定与静态绑定
+静态绑定又称为前期绑定(早绑定)，在程序编译期间确定了程序的行为，也称为静态多态，比如：普通函数调用，函数重载。
+动态绑定又称后期绑定(晚绑定)，是在程序运行期间，根据具体拿到的类型确定程序的具体行为，调用具体的函数，也称为动态多态。
+3.单继承和多继承的虚函数表
+3.1单继承中的虚函数表
+class Base {
+public:
+	virtual void func1() { cout << "Base::func1" << endl; }
+	virtual void func2() { cout << "Base::func2" << endl; }
+private:
+	int a;
+};
+class Derive :public Base {
+public:
+	virtual void func1() { cout << "Derive::func1" << endl; }
+	virtual void func3() { cout << "Derive::func3" << endl; }
+	virtual void func4() { cout << "Derive::func4" << endl; }
+private:
+	int b;
+};
+int main()
+{
+	Base b;
+	Derive d;
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+
+观察上图中的监视窗口中我们发现看不见func3和func4。这里是编译器的监视窗口故意隐藏了这两个函数，也可以认为是他的一个小bug。那么我们如何查看d的虚表呢？下面我们使用代码打印出虚表中的函数。
+
+class Base {
+public:
+	virtual void func1() { cout << "Base::func1" << endl; }
+	virtual void func2() { cout << "Base::func2" << endl; }
+private:
+	int a;
+};
+class Derive :public Base {
+public:
+	virtual void func1() { cout << "Derive::func1" << endl; }
+	virtual void func3() { cout << "Derive::func3" << endl; }
+	virtual void func4() { cout << "Derive::func4" << endl; }
+private:
+	int b;
+};
+
+typedef void(*VFPTR) ();
+void PrintVTable(VFPTR vTable[])
+{
+	// 依次取虚表中的虚函数指针打印并调用。调用就可以看出存的是哪个函数
+	cout << " 虚表地址>" << vTable << endl;
+	for (int i = 0; vTable[i] != 0; ++i)
+	{
+		printf(" 第%d个虚函数地址 :0X%x,->", i, vTable[i]);
+		VFPTR f = vTable[i];
+		f();
+	}
+	cout << endl;
+}
+int main()
+{
+	Base b;
+	Derive d;
+	// 思路：取出b、d对象的头4bytes，就是虚表的指针，前面我们说了虚函数表本质是一个存虚函数指
+		// 1.先取b的地址，强转成一个int*的指针
+		// 2.再解引用取值，就取到了b对象头4bytes的值，这个值就是指向虚表的指针
+		// 3.再强转成VFPTR*，因为虚表就是一个存VFPTR类型(虚函数指针类型)的数组。
+		// 4.虚表指针传递给PrintVTable进行打印虚表
+		// 5.需要说明的是这个打印虚表的代码经常会崩溃，因为编译器有时对虚表的处理不干净，虚表最后面
+		//没有放nullptr，导致越界，这是编译器的问题。我们只需要点目录栏的 - 生成 - 清理解决方案，再编译就好了。
+	VFPTR* vTableb = (VFPTR*)(*(int*)&b);
+	PrintVTable(vTableb);
+	VFPTR* vTabled = (VFPTR*)(*(int*)&d);
+	PrintVTable(vTabled);
+	system("pause");
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+
+
+
+3.2 多继承中的虚函数表
+class Base1 {
+public:
+	virtual void func1() { cout << "Base1::func1" << endl; }
+	virtual void func2() { cout << "Base1::func2" << endl; }
+private:
+	int b1;
+};
+class Base2 {
+public:
+	virtual void func1() { cout << "Base2::func1" << endl; }
+	virtual void func2() { cout << "Base2::func2" << endl; }
+private:
+	int b2;
+};
+class Derive : public Base1, public Base2 {
+public:
+	virtual void func1() { cout << "Derive::func1" << endl; }
+	virtual void func3() { cout << "Derive::func3" << endl; }
+private:
+	int d1;
+};
+typedef void(*VFPTR) ();
+void PrintVTable(VFPTR vTable[])
+{
+	cout << " 虚表地址>" << vTable << endl;
+	for (int i = 0; vTable[i] != nullptr; ++i)
+	{
+		printf(" 第%d个虚函数地址 :0X%x,->", i, vTable[i]);
+		VFPTR f = vTable[i];
+		f();
+	}
+	cout << endl;
+}
+int main()
+{
+	Derive d;
+	VFPTR* vTableb1 = (VFPTR*)(*(int*)&d);
+	PrintVTable(vTableb1);
+	VFPTR* vTableb2 = (VFPTR*)(*(int*)((char*)&d + sizeof(Base1)));
+	PrintVTable(vTableb2);
+	return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+1.第一个问题，sizeof(Derive)有多大？
+20字节
+
+观察下图可以看出：多继承派生类的未重写的虚函数放在第一个继承基类部分的虚函数表中
+
+
+4.面试常考
+什么是多态？答：参考上篇博客内容
+什么是重载、重写(覆盖)、重定义(隐藏)？答：参考本篇博客图
+多态的实现原理？答：参考本篇博客
+inline函数可以是虚函数吗？答：不能，因为inline函数没有地址，无法把地址放到虚函数表中。
+静态成员可以是虚函数吗？答：不能，因为静态成员函数没有this指针，使用类型::成员函数的调用方式无法访问虚函数表，所以静态成员函数无法放进虚函数表。
+构造函数可以是虚函数吗？答：不能，因为对象中的虚函数表指针是在构造函数初始化列表阶段才初始化的。
+析构函数可以是虚函数吗？什么场景下析构函数是虚函数？答：可以，并且最好把基类的析构函数定义成虚函数。参考上篇博客虚函数重写的两个例外
+对象访问普通函数快还是虚函数更快？答：首先如果是普通对象，是一样快的。如果是指针对象或者是引用对象，则调用的普通函数快，因为构成多态，运行时调用虚函数需要到虚函数表中去查找。
+虚函数表是在什么阶段生成的，存在哪的？答：虚函数表是在编译阶段就生成的，运行时通过虚函数表指针找到对应虚函数表中的函数地址，调用虚函数；一般情况下存在代码段(常量区)的。
+C++菱形继承的问题？虚继承的原理？答：注意这里不要把虚函数表和虚基表搞混了。不要把虚基表指针和虚函数表指针搞混。
+什么是抽象类？抽象类的作用？答：抽象类强制重写了虚函数，另外抽象类体现出
+了接口继承关系。
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/107296203
