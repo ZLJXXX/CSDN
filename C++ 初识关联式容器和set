@@ -1,0 +1,193 @@
+C++ 初识关联式容器和set
+
+fighting QAQ 2020-07-15 13:33:37  1  收藏
+分类专栏： C++ 文章标签： c++算法
+编辑 版权
+C++ 初识关联式容器和set
+[本篇目录]
+C++ 初识关联式容器和set
+1. 关联式容器
+2.键值对
+3. 树形结构的关联式容器
+4.set
+4.1set的介绍
+4.2set的使用
+1. 关联式容器
+引言：在初阶阶段，我们已经接触过STL中的部分容器，比如：vector、list、deque、forward_list(C++11)等，这些容器统称为序列式容器，因为其底层为线性序列的数据结构，里面存储的是元素本身。那什么是关联式容器？它与序列式容器有什么区别？
+关联式容器也是用来存储数据的，与序列式容器不同的是，其里面存储的是<key, value>结构的键值对，在数据检索时比序列式容器效率更高
+
+2.键值对
+用来表示具有一一对应关系的一种结构，该结构中一般只包含两个成员变量key和value，key代表键值，value表示与key对应的信息。 比如：现在要建立一个英汉互译的字典，那该字典中必然有英文单词与其对应的中文含义，而且，英文单词与其中文含义是一一对应的关系，即通过该应该单词，在词典中就可以找到与其对应的中文含义。
+
+SGI-STL中关于键值对的定义：
+
+template <class T1, class T2>
+struct pair
+{
+ typedef T1 first_type;
+ typedef T2 second_type;
+ T1 first;
+ T2 second;
+ pair(): first(T1()), second(T2())
+ {}
+
+ pair(const T1& a, const T2& b): first(a), second(b)
+ {}
+};
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+3. 树形结构的关联式容器
+根据应用场景的不同，STL总共实现了两种不同结构的管理式容器：树型结构与哈希结构。树型结构的关联式容器主要有四种：map、set、multimap、multiset。这四种容器的共同点是：使用平衡搜索树(即红黑树)作为其底层结果，容器中的元素是一个有序的序列。下面依次介绍每一个容器。
+
+4.set
+4.1set的介绍
+set的文档介绍（来自cplusplus官网）
+翻译：
+
+set是按照一定次序存储元素的容器
+在set中，元素的value也标识它(value就是key，类型为T)，并且每个value必须是唯一的。set中的元素不能在容器中修改(元素总是const)，但是可以从容器中插入或删除它们。
+在内部，set中的元素总是按照其内部比较对象(类型比较)所指示的特定严格弱排序准则进行排序。
+set容器通过key访问单个元素的速度通常比unordered_set容器慢，但它们允许根据顺序对子集进行直接迭代。
+set在底层是用二叉搜索树(红黑树)实现的。
+重点：
+与map/multimap不同，map/multimap中存储的是真正的键值对<key, value>，set中只放value，但在底层实际存放的是由<value, value>构成的键值对。
+set中插入元素时，只需要插入value即可，不需要构造键值对。
+set中的元素不可以重复(因此可以使用set进行去重)。
+使用set的迭代器遍历set中的元素，可以得到有序序列
+set中的元素默认按照小于来比较
+set中查找某个元素，时间复杂度为：log2N
+set中的元素不允许修改(为什么?因为其底层是二叉树搜索树不能破坏树的平衡和规则)
+set中的底层二叉搜索树(红黑树)实现的。
+4.2set的使用
+set的模板参数列表
+
+T: set中存放元素的类型，实际在底层存储<value, value>的键值对。
+Compare：set中元素默认按照小于来比较
+Alloc：set中元素空间的管理方式，使用STL提供的空间配置器管理
+set的构造
+函数声明	功能介绍
+set (const Compare& comp = Compare(), const Allocator& =Allocator() );	构造空的set
+set (InputIterator first, InputIterator last, const Compare&comp = Compare(), const Allocator& = Allocator() );	用[first, last)区间中的元素构造set
+set ( const set<Key,Compare,Allocator>& x);	set的拷贝构造
+set的迭代器
+函数声明	功能介绍
+iterator begin()	返回set中起始位置元素的迭代器
+iterator end()	返回set中最后一个元素后面的迭代器
+const_iterator cbegin() const	返回set中起始位置元素的const迭代器
+const_iterator cend() const	返回set中最后一个元素后面的const迭代器
+reverse_iterator rbegin()	返回set第一个元素的反向迭代器，即end
+reverse_iterator rend()	返回set最后一个元素下一个位置的反向迭代器，即rbegin
+const_reverse_iterator crbegin() const	返回set第一个元素的反向const迭代器，即cend
+const_reverse_iterator crend() const	返回set最后一个元素下一个位置的反向const迭代器
+set的容量
+函数声明	功能介绍
+bool empty ( ) const	检测set是否为空，空返回true，否则返回true
+size_type size() const	返回set中有效元素的个数
+set修改操作
+函数声明	功能介绍
+pair<iterator,bool> insert (const value_type& x )	在set中插入元素x，实际插入的是<x, x>构成的键值对，如果插入成功，返回<该元素在set中的位置，true>,如果插入失败，说明x在set中已经存在，返回<x在set中的位置，false>
+void erase ( iterator position )	删除set中position位置上的元素
+size_type erase ( const key_type& x )	删除set中值为x的元素，返回删除的元素的个数
+void erase ( iterator first,iterator last )	删除set中[first, last)区间中的元素
+void swap (set<Key,Compare,Allocator> &st );	交换set中的元素
+void clear ( )	将set中的元素清空
+iterator find ( const key_type& x ) const	返回set中值为x的元素的位置
+size_type count ( const key_type& x ) const	返回set中值为x的元素的个数
+set的使用举例
+#include <set>
+#include<string>
+void test_map_set1()
+{
+	set<int> s;
+	s.insert(1);
+	s.insert(5);
+	s.insert(3);
+	s.insert(9);
+	s.insert(7);
+	set<int>::iterator it = s.begin();
+	while (it != s.end())
+	{
+		cout << *it << " ";
+		++it;
+	}
+	cout << endl;
+	set<int>::reverse_iterator rit = s.rbegin();
+	while (rit != s.rend())
+	{
+		cout << *rit << " ";
+		++rit;
+	}
+	cout << endl;
+	//删除
+	auto pos = s.find(5);
+	if (pos != s.end())
+	{
+		s.erase(pos);
+	}
+	else
+	{
+		cout << "找不到" << endl;
+	}
+	for (auto e : s)
+	{
+		cout << e << " ";
+	}
+	cout << endl;
+
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+set可以实现增删查的功能，其时间复杂度为O(logN),主要对普通值进行查找调用set<int> s; s.find()其底层调用的是二叉搜索树所以其效率很高，如果修改set中的值会破坏二叉搜索树，所以set不能用来修改，普通算法库中的find()函数底层为普通查找效率很低，时间复杂度为O(N)。所以set是一种快速查找排序的关联式容器。
+————————————————
+版权声明：本文为CSDN博主「fighting QAQ」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_43676757/article/details/107358818
