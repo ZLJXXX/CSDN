@@ -1,0 +1,199 @@
+什么是死锁？
+死锁是指两个或两个以上的进程在执行过程中，由于竞争资源或者由于彼此通信而造成的一种阻塞的现象，若无外力作用，它们都将无法推进下去。此时称系统处于死锁状态或系统产生了死锁，这些永远在互相等待的进程称为死锁进程。产生死锁的原因，主要包括：
+
+系统资源不足；
+程序执行的顺序有问题；
+资源分配不当等。
+如果系统资源充足，进程的资源请求都能够得到满足，那么死锁出现的可能性就很低；否则，
+就会因争夺有限的资源而陷入死锁。其次，程序执行的顺序与速度不同，也可能产生死锁。产生死锁的四个必要条件：
+
+互斥条件：一个资源每次只能被一个进程使用。
+请求与保持条件：一个进程因请求资源而阻塞时，对已获得的资源保持不放。
+不剥夺条件：进程已获得的资源，在末使用完之前，不能强行剥夺。
+循环等待条件：若干进程之间形成一种头尾相接的循环等待资源关系。
+这四个条件是死锁的必要条件，只要系统发生死锁，这些条件必然成立，而只要上述条件之一不满足，就不会发生死锁。
+
+如何解决死锁？
+理解了死锁的原因，尤其是产生死锁的四个必要条件，我们就可以最大可能地避免、预防和解除死锁。所以，在系统设计、进程调度等方面注意如何不让这四个必要条件成立，如何确定资源的合理分配算法，避免进程永久占据系统资源，这就是避免、预防和解决死锁的最佳实践。此外，也要防止进程在处于等待状态的情况下占用资源。因此，对资源的分配要给予合理的规划。
+
+写一段死锁的代码吧！
+public class DeadLock {
+    public static final String LOCK_1 = "lock1";
+    public static final String LOCK_2 = "lock2";
+
+    public static void main(String[] args) {
+        Thread threadA = new Thread(() -> {
+            try {
+                while (true) {
+                    synchronized (DeadLock.LOCK_1) {
+                        System.out.println(Thread.currentThread().getName() + " 锁住 lock1");
+                        Thread.sleep(1000);
+                        synchronized (DeadLock.LOCK_2) {
+                            System.out.println(Thread.currentThread().getName() + " 锁住 lock2");
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        Thread threadB = new Thread(() -> {
+            try {
+                while (true) {
+                    synchronized (DeadLock.LOCK_2) {
+                        System.out.println(Thread.currentThread().getName() + " 锁住 lock2");
+                        Thread.sleep(1000);
+                        synchronized (DeadLock.LOCK_1) {
+                            System.out.println(Thread.currentThread().getName() + " 锁住 lock1");
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        threadA.start();
+        threadB.start();
+    }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+如上述代码所示，我们启动了两个线程，在每个线程中都要获得DeadLock.LOCK_1和DeadLock.LOCK_2，其中
+
+threadA，先获取DeadLock.LOCK_1，再获取DeadLock.LOCK_2
+threadB，先获取DeadLock.LOCK_2，再获取DeadLock.LOCK_1
+这样，当threadA获取到DeadLock.LOCK_1之后，就要去获取DeadLock.LOCK_2，而DeadLock.LOCK_2则是先被threadB获取了，因此threadA就需要等待threadB释放DeadLock.LOCK_2之后才能继续执行；但是threadB在获取到DeadLock.LOCK_2之后，却是在等待threadA释放DeadLock.LOCK_1，因此这就形成了“循环等待条件”，从而形成了死锁。想要解决这个死锁很简单，我们只需要让threadA和threadB获取DeadLock.LOCK_1和DeadLock.LOCK_2的顺序相同即可，例如：
+
+public class DeadLock {
+    public static final String LOCK_1 = "lock1";
+    public static final String LOCK_2 = "lock2";
+
+    public static void main(String[] args) {
+        Thread threadA = new Thread(() -> {
+            try {
+                while (true) {
+                    synchronized (DeadLock.LOCK_1) {
+                        System.out.println(Thread.currentThread().getName() + " 锁住 lock1");
+                        Thread.sleep(1000);
+                        synchronized (DeadLock.LOCK_2) {
+                            System.out.println(Thread.currentThread().getName() + " 锁住 lock2");
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        Thread threadB = new Thread(() -> {
+            try {
+                while (true) {
+                    synchronized (DeadLock.LOCK_1) {
+                        System.out.println(Thread.currentThread().getName() + " 锁住 lock1");
+                        Thread.sleep(1000);
+                        synchronized (DeadLock.LOCK_2) {
+                            System.out.println(Thread.currentThread().getName() + " 锁住 lock2");
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        threadA.start();
+        threadB.start();
+    }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+除此之外，还有一种解决方法，那就是让DeadLock.LOCK_1和DeadLock.LOCK_2的值相同，例如：
+
+    public static final String LOCK_1 = "lock";
+    public static final String LOCK_2 = "lock";
+1
+2
+这是为什么呢？因为字符串有一个常量池，如果不同的线程持有的锁是具有相同字符的字符串锁时，那么两个锁实际上就是同一个锁。
+————————————————
+版权声明：本文为CSDN博主「CG国斌」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_35246620/article/details/72823906
