@@ -1,0 +1,228 @@
+c++(三)、对象和类（一）
+
+桂花菜籽 2020-05-10 02:37:33  37  收藏
+分类专栏： 编程语言 c++ 文章标签： c++
+版权
+一、用类创建对象
+
+1、类的概念（concepts of class）
+
+1）、面向对象编程（Object-Oriented Programming）特征
+
+（1）、Abstraction（抽象）
+
+（2）、Polymorphism（多态）
+
+（3）、Inheritance（继承）
+
+（4）、Encapsulation（封装）
+
+2）、定义对象的方法
+
+    对象是类的实例，类包含：有变量定义的数据域（data fields）和由函数定义的行为（behaviors）。
+
+    类中有两种特殊的函数：（1）、构造函数（constructors）：在创建对象时被自动调用；（2）、析构函数（destructors）：在对象被销毁时被自动调用。
+
+    构造函数简写ctor，析构函数简写dtor。
+
+2、创建对象并访问其对象成员
+
+1）、构造函数（ctor）
+
+class Circle
+{
+public:
+    double radius;
+    
+    //ctor
+    Circle()
+    {
+        radius = 1.0;
+    }
+ 
+    //ctor
+    Circle(double newRadius)
+    {
+        radius = newRadius;
+    }
+ 
+    double getArea()
+    {
+        return radius * radius * 3.14
+    }
+}
+ctor的特点：
+
+（1）、自动调用；
+
+（2）、与类同名；
+
+（3）、无返回值；
+
+（4）、可重载；
+
+（5）、可不带参数。
+
+    另外类可不声明构造函数，编译器会提供一个带有空函数体的无参构造参数，只有当未声明构造函数时，编译器才会提供这个函数，并称之为默认构造函数。
+
+2）、创建对象
+
+//无参数；
+Circle c1;//正确；
+Circle c2();//错误，c++编译器认为这是一个函数声明；
+Circle c3{};//正确，用空初始化列表初始化c3对象(调用Circle默认构造函数)；
+ 
+//带参数
+Circle c4{5.5};//列表初始化，并带有窄化检查；
+3）、对象访问云算法
+
+点运算符（.）也称为对象成员访问运算符。
+
+//访问Circle中的radius成员
+Circle c;//定义无参数对象；
+c.radius = 1.0;//用点运算符访问数据域成员radius;
+double area = c.getArea();//用点运算符访问成员函数；
+二、对象拷贝以及分离声明与实现
+
+1、类是一种数据类型
+
+    用类声明一个实体的说法与定义一个变量的说法有些不同：用原生数据类型定义变量，用类名定义对象。
+
+//定义变量的例子
+int x{2};
+int x2 = {4};
+auto x3{x};
+ 
+//定义对象的例子
+Circle c1;//调用默认ctor；
+Circle c2(5.5);//调用有参ctor；
+Circle c3{5.5};//列表初始化，直接调用有参ctor;
+2、成员拷贝
+
+    将一个对象的内容拷贝给另外一个对象的方法：使用赋值运算符（=）；默认情况下
+
+，对象中的每个数据域都被拷贝到另一个对象的对应部分。
+
+Circle c1{5.5};//定义类对象c1，并用列表初始化给数据成员变量radius赋值；
+ 
+Circle c2;//定义类对象c2;
+ 
+c2 = c1;//用赋值运算符给c2赋值；对象c2中的radius也为5.5；
+3、匿名对象（Anonymous Object）
+
+    所谓匿名对象，是只有类名和使用列表初始化的初始值，而没有类对象名称的对象。匿名对象声明后只能使用一次。
+
+Circle c1 = Circle{1.1};//用匿名对象做拷贝列表初始化；
+Circle c3;
+c3 = Circle{3.3};//用匿名对象给c3对象赋值；
+4、局部类和嵌套类
+
+    局部类是指在一个函数中声明的类；
+
+void f()
+{
+    class C//C及其对象只在f()中可用；
+    {
+        void g()//成员函数必须在C中实现；
+        {
+            /*访问f()的成员受限*/
+        }
+    };
+    
+    C c1,c2;
+}
+    嵌套类在另一个类中声明的类
+
+class E
+{
+    class F//F及其成员可访问E的成员；
+    {
+        
+    }；
+ 
+    E e1,e2;
+}
+5、将声明与实现分离
+
+    所谓将声明和实现分离，将类的声明放在.h文件中，将类的成员函数的实现放在.cpp中，一般.h和.cpp文件保持同名即可。
+
+cpp文件中类的实现格式如下：
+
+FunctionType ClassName :: FunctionName(Arguments) {/*函数实现部分*/ }
+
+其中的::运算符为二元作用域解析云算符，简称域分隔符。
+
+6、内敛声明与内联函数
+
+使用方法与c语言中的内联函数一样。
+
+当函数在类中声明时实现的函数，将自动成为内联函数。
+
+7、避免头文件被多次包含
+
+    为避免头文件被多次包含，可使用预处理指令，方法如下：
+
+//method 1：
+#ifndef MY_HEADER_FILE_H
+#define MY_HEADER_FILE_H
+//头文件内容
+ 
+#endif
+ 
+ 
+//method 2:
+#pragma once //c++03,c90
+ 
+ 
+//method 3:
+_Pragma("once") //c++11,c99
+三、对象指针、对象数组以及函数参数
+
+1、对象指针与动态对象
+
+1）、对象指针
+
+    对象指针可以指向新的对象名，用指针访问对象成员需要用箭头运算符(->):
+
+Circle c1;
+Circle* c2 = &c1;//定义对象指针；
+ 
+//用箭头运算符访问对象成员；
+c2->radius = 2.0;
+double area = c2->getArea();
+2)、在堆中创建对象
+
+    在函数中声明的对象都在栈上创建的，当函数返回，则对象销毁。为保留对象，可以用new运算符在堆上创建它。
+
+Circle* c1 = new Cirlce{};//无参构造函数创建对象；
+ 
+Circle* c2 = new Circle{5.9};//用有参函数创建对象；
+ 
+//当程序结束时，动态对象会被销毁，或者用delete显式销毁；
+delete c1;
+delete c2;
+2、对象数组（Array of Objects）
+
+对象数组的声明有如下几种方式：
+
+//method 1:
+Circle c1[10];
+ 
+//method 2:
+Circle c2[3] = {Circle{3}, Circle{}, Circle{5}};
+//注意：声明数组时不能用auto；
+ 
+//method 3:
+Circle c3{3.1, {}, 5};
+ 
+//method 4:
+auto* c4 = new Circle[3];
+auto* c5 = new Circle{3.1, {}, 5};
+ 
+delete [] c4;
+delete [] c5;
+c4 = c5 = nullptr;
+3、对象还可作为函数参数和返回值。（不再赘述）
+————————————————
+版权声明：本文为CSDN博主「桂花菜籽」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/GuiHuaCaiZi/article/details/106030600
