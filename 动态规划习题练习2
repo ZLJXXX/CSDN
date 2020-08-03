@@ -1,0 +1,139 @@
+# 动态规划(题目分析+解题思路)
+博接上文，继续练习动态规划
+@[TOC](本篇内容)
+## 1.第4题路径总和
+[【本题链接】](https://www.nowcoder.com/practice/166eaff8439d4cd898e3ba933fbc6358?tpId=46&tqId=29117&tPage=1&rp=1&ru=/ta/leetcode&qru=/ta/leetcode/question-ranking)
+
+> 题目描述
+一个机器人在m×n大小的地图的左上角（起点，下图中的标记“start"的位置）。
+机器人每次向下或向右移动。机器人要到达地图的右下角。（终点，下图中的标记“Finish"的位置）。
+可以有多少种不同的路径从起点走到终点？
+![在这里插入图片描述](https://img-blog.csdnimg.cn/2020080321405980.png)
+上图是3×7大小的地图，有多少不同的路径？
+
+【解题分析】
+本题也是动态规划的问题，求路径总和，还是通过动态规划四要素分析：
+**状态**：通过问题抽象出状态
+F(i,j) : 从开始（0.0)点出发到达（i,j）位置的路径总数
+**状态转义方程**：到达（i,j）位置只能通过(i)(j-1)和(i- 1)(j)两条路到达
+即：F(i)(j)  =  F(i - 1)(j) + F(i)(j - 1);
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200803220201753.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQzNjc2NzU3,size_16,color_FFFFFF,t_70)
+**状态初始化条件**：边界的点到达它的路径只有一条
+即：F(i)(0) == F(0)(j) = 1
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200803220944667.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQzNjc2NzU3,size_16,color_FFFFFF,t_70)
+**返回值**：到达终点有多少条路
+即F(m - 1)(n - 1)
+【代码实现】
+1.将二维数组边界初始化为1
+
+```cpp
+class Solution {
+public:
+    int uniquePaths(int m, int n) {
+        // write code here
+        vector<vector<int>> array(m,vector<int>());
+        for(int i = 0;i < m;i++)
+        {
+            array[i].resize(n);
+        }
+        for(int i = 0;i < m;i++)
+        {
+            array[i][0] = 1;
+        }  
+        for(int j = 0;j < n;j++)
+        {
+            array[0][j] = 1;
+        }
+         for(int i = 1;i < m;i++)
+         {
+             for(int j = 1;j < n;j++)
+             {
+                 array[i][j] = array[i - 1][j] + array[i][j - 1]; 
+             }
+         }
+        return array[m - 1][n - 1];
+    }
+};
+```
+2.先将二维数组全部初始化为1
+
+```cpp
+class Solution {
+public:
+    int uniquePaths(int m, int n) {
+        // write code here
+        vector<vector<int>> array(m,vector<int>(n,1));
+         for(int i = 1;i < m;i++)
+         {
+             for(int j = 1;j < n;j++)
+             {
+                 array[i][j] = array[i - 1][j] + array[i][j - 1]; 
+             }
+         }
+        return array[m - 1][n - 1];
+    }
+};
+```
+## 2.最短路径和
+[【本题链接】](https://www.nowcoder.com/practice/23462ed010024fcabb7dbd3df57c715e?tpId=46&tqId=29115&tPage=1&rp=1&ru=/ta/leetcode&qru=/ta/leetcode/question-ranking)
+
+> 给定一个由非负整数填充的m x n的二维数组，现在要从二维数组的左上角走到右下角，请找出路径上的所有数字之和最小的路径。
+注意：你每次只能向下或向右移动。
+输入
+复制
+[[1,2],[5,6],[1,1]]
+输出
+复制
+8
+
+解法：重新创建一个二维的和矩阵，通过动态规划来完成
+方法：动态规划
+状态：
+  子状态：从(0,0)到达(1,0),(1,1),(2,1),...(m-1,n-1)的最短路径
+  F(i,j): 从(0,0)到达F(i,j)的最短路径
+状态递推：
+  F(i,j) = min{F(i-1,j) , F(i,j-1)} + (i,j)
+初始化：
+  F(0,0) = (0,0)
+  特殊情况：第0行和第0列
+  F(0,i) = F(0,i-1) + (0,i)
+  F(i,0) = F(i-1,0) + (i,0)
+返回结果：
+  F(m-1,n-1)
+
+```cpp
+class Solution {
+public:
+    /**
+     * 
+     * @param grid int整型vector<vector<>> 
+     * @return int整型
+     */
+    int minPathSum(vector<vector<int> >& grid) {
+        // write code here
+        if(grid.empty())
+            return 0;
+        int row  = grid.size();
+        int col = grid[0].size();
+        vector<vector<int>> ret(row,vector<int>(col,0));
+        //状态初始化
+        ret[0][0] = grid[0][0];
+        for(int i = 1;i < row;i++)
+        {
+            ret[i][0] = ret[i - 1][0] + grid[i][0];
+        }
+        for(int j = 0;j < col;j++)
+        {
+            ret[0][j] = ret[0][j - 1] + grid[0][j];
+        }
+        for(int i = 1;i < row;i++)
+        {
+            for(int j = 1;j < col;j++)
+            {
+                    ret[i][j] = min(ret[i - 1][j],ret[i][j - 1]) + grid[i][j];
+            }
+        }
+        return ret[row - 1][col - 1];
+    }
+};
+```
