@@ -1,0 +1,47 @@
+//第一题： 给个英文字母字符串，长度10 ^ 3以内，在后面加随便英文字母，找出最短回文字符串
+#define _CRT_SECURE_NO_WARNINGS
+#include<iostream>
+#include<string>
+#include<algorithm>
+using namespace std;
+bool is_Huiwen(const string& str)
+{
+	int begin = 0;
+	int end = str.size() - 1;
+	while (begin <= end)
+	{
+		if (str[begin] != str[end])
+		{
+			return false;
+		}
+		begin++;
+		end--;
+	}
+	return true;
+}
+int main()
+{
+	string str;
+	cin >> str;
+	string ret;
+	string res;
+	for (int i = 0; i < str.size(); i++)
+	{
+		ret = str;
+		res += str.substr(0, i);
+		reverse(res.begin(), res.end());
+		ret += res;
+		if (is_Huiwen(ret))
+		{
+			break;
+		}
+		else
+		{
+			res.clear();
+		}
+	}
+	cout << ret << endl;
+	system("pause");
+	return 0;
+
+}
