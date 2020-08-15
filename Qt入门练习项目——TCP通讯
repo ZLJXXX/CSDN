@@ -1,0 +1,534 @@
+Qt入门练习项目——TCP通讯
+
+Pointer=NULL 2020-08-03 17:13:13  172  收藏 5
+分类专栏： Qt入门练手项目 文章标签： qt5c++
+版权
+       通过本项目了解Qt的TCP通讯
+成果图：
+TCP通讯
+TCP通讯分析：
+
+服务端（监听端）：通过IP和端口负责监听，进行链接。使用和了解QTcpServer类，进行监听操作。
+客户端（链接端）：通过IP和端口和服务端链接。使用和了解QTcpSocket类。
+具体代码如下：
+1. 服务端
+Server::Server(QWidget *parent)
+    : QMainWindow(parent)
+{
+	ui = new Ui::ServerClass();
+    ui->setupUi(this);
+	this->setWindowTitle("服务端");
+	sw = new SendWindow();
+	sw->show();
+	server = new QTcpServer();
+	socket = new QTcpSocket();//可以不用new 进行初始化
+	connect(ui->pb_start,SIGNAL(clicked()),this,SLOT(on_changePort_click()));
+	connect(ui->pb_send,SIGNAL(clicked()),this,SLOT(on_send_click()));
+	connect(ui->pb_close,SIGNAL(clicked()),this,SLOT(on_close_click()));
+	connect(server,SIGNAL(newConnection()),this,SLOT(on_linkOk_connect()));
+}
+void Server::on_read_readRead()
+{
+	ui->pte_message->appendPlainText("接收："+socket->readAll());
+}
+void Server::on_changePort_click()
+{
+	if (ui->le_port->text() == "")
+	{
+		QMessageBox::warning(this,"警告","端口不能为空",QMessageBox::Ok,QMessageBox::NoButton);
+	}
+	else
+	{
+		int port = ui->le_port->text().toInt();
+		server->listen(QHostAddress::LocalHost, port);//QHostAddress::LocalHost 获取本机的IPv4地址
+		if (server->isListening())
+		{
+			
+			ui->l_state->setText("开始监听");
+			ui->pte_message->appendPlainText("已监听--等待；连接中！");
+		}
+	}
+}
+void Server::on_send_click()
+{
+
+		QString str = ui->le_outDatas->text();
+		if (str != "")
+		{
+			ui->pte_message->appendPlainText("发送：" + str);
+			ui->le_outDatas->clear();
+			ui->le_outDatas->setFocus();
+			QByteArray out = str.toUtf8();
+			socket->write(out);
+			ui->le_outDatas->clear();
+		}
+		else
+		{
+			ui->pte_message->appendPlainText("警告：不支持输入空消息！\n\n");
+		}
+	
+
+
+}
+void Server::on_close_click()
+{
+	server->close();
+	if (!server->isListening())
+	{
+		ui->pb_close->setEnabled(false);
+		ui->pb_start->setEnabled(true);
+		ui->l_state->setText("已关闭监听");
+	}
+	else
+	{
+		ui->pte_message->appendPlainText("关闭失败");
+	}
+}
+void Server::on_linkOk_connect()
+{
+	ui->l_state->setText("已连接");
+	socket = server->nextPendingConnection();
+	connect(socket, SIGNAL(readyRead()), this, SLOT(on_read_readRead()));
+	QHostAddress addr = server->serverAddress();
+	int port = server->serverPort();
+	QString datas = "客户端  Ip:"+ addr.toString() + "  端口："+QString::number(port);
+	ui->pte_message->appendPlainText("***已连接***\n" +datas+"\n\n");
+	ui->pb_send->setEnabled(true);
+	ui->pb_close->setEnabled(true);
+	ui->pb_start->setEnabled(false);
+}
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+启动监听
+int port = ui->le_port->text().toInt();
+		server->listen(QHostAddress::LocalHost, port);//QHostAddress::LocalHost 获取本机的IPv4地址
+		if (server->isListening())
+		{
+			
+			ui->l_state->setText("开始监听");
+			ui->pte_message->appendPlainText("已监听--等待；连接中！");
+		}
+1
+2
+3
+4
+5
+6
+7
+8
+输入要监听的IP和端口，调用 QTcpServer的listen()函数开始进行监听。这里用本机作为链接所以使用了QHostAddress::LocalHost。
+
+链接成功
+	connect(server,SIGNAL(newConnection()),this,SLOT(on_linkOk_connect()));
+1
+QTcpServer 在链接成功后会发出newConnection()信号。
+
+void Server::on_linkOk_connect()
+{
+	ui->l_state->setText("已连接");
+	socket = server->nextPendingConnection();
+	connect(socket, SIGNAL(readyRead()), this, SLOT(on_read_readRead()));
+	QHostAddress addr = server->serverAddress();
+	int port = server->serverPort();
+	QString datas = "客户端  Ip:"+ addr.toString() + "  端口："+QString::number(port);
+	ui->pte_message->appendPlainText("***已连接***\n" +datas+"\n\n");
+	ui->pb_send->setEnabled(true);
+	ui->pb_close->setEnabled(true);
+	ui->pb_start->setEnabled(false);
+}
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+nextPendingConnection()函数将返回与其连接的客户端的QTcpSocket ，通过QTcpSocket进行与客户端的通信。所以在已经获得客户端QTcpSocket后在进行信息发送的 信号与槽函数的链接。
+
+发送信息
+void Server::on_send_click()
+{
+
+		QString str = ui->le_outDatas->text();
+		if (str != "")
+		{
+			ui->pte_message->appendPlainText("发送：" + str);
+			ui->le_outDatas->clear();
+			ui->le_outDatas->setFocus();
+			QByteArray out = str.toUtf8();
+			socket->write(out);
+			ui->le_outDatas->clear();
+		}
+		else
+		{
+			ui->pte_message->appendPlainText("警告：不支持输入空消息！\n\n");
+		}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+通过QTcoSocket类的write()函数可以进行两段的通信，当有新数据流入缓存区时QTcpSocket会发出readyRead()的信号，客户端收到信号后调用槽函数即可输出数据。
+write()函数的参数为QByteArray类型，选择好格式可以防止出现中文乱码问题。
+
+读取信息
+	connect(socket, SIGNAL(readyRead()), this, SLOT(on_read_readRead()));
+1
+void Server::on_read_readRead()
+{
+	ui->pte_message->appendPlainText("接收："+socket->readAll());
+}
+1
+2
+3
+4
+readyRead()信号与槽函数的链接，应在链接成功后服务端获得客户端QTcpSocket后进行。
+
+2. 客户端
+SendWindow::SendWindow(QWidget *parent)
+{
+	ui = new Ui::SendWindowClass();
+	ui->setupUi(this);
+	this->setWindowTitle("客户端");
+	socket = new QTcpSocket();
+	connect(ui->pb_link, SIGNAL(clicked()),this,SLOT(on_link_click()));
+	connect(ui->pb_send,SIGNAL(clicked()),this,SLOT(on_send_click()));
+	connect(ui->pb_close,SIGNAL(clicked()),this,SLOT(on_linkClose_disconnected()));
+	connect(socket,SIGNAL(connected()),this,SLOT(on_linkOk_connect()));
+	connect(socket,SIGNAL(disconnected()),this,SLOT(on_linkClose_disconnected()));
+	connect(socket,SIGNAL(readyRead()),this,SLOT(on_read_readRead()));
+}
+void SendWindow::on_read_readRead()
+{
+	ui->pte_message->appendPlainText("接收："+socket->readAll());
+}
+void SendWindow::on_linkClose_disconnected()
+{
+	ui->pb_link->setEnabled(true);
+	ui->pb_close->setEnabled(false);
+	ui->pb_send->setEnabled(false);
+	ui->l_link->setText("断开连接");
+	ui->pte_message->setPlainText("***连接已断开***\n");
+}
+void SendWindow::on_link_click()
+{
+	int port = ui->le_port->text().toInt();
+	QString ip = ui->le_ip->text();
+	if (!(ip.isEmpty())||port == 0)
+	{
+		QHostAddress addr(ip);
+		socket->connectToHost(addr, port);	
+	}
+	else
+	{
+		QMessageBox window;
+		window.warning(this,"警告","请输入ip和端口",window.Ok,window.NoButton);
+	}
+}
+void SendWindow::on_send_click()
+{
+		QString str = ui->le_outDatas->text();
+		if (str != "")
+		{
+			ui->pte_message->appendPlainText("发送：" + str);
+			ui->le_outDatas->clear();
+			ui->le_outDatas->setFocus();
+			QByteArray datas = str.toUtf8();
+			socket->write(datas);
+		}
+		else
+		{
+			ui->pte_message->appendHtml("警告：不支持输入空消息！\n\n");
+		}
+}
+void SendWindow::on_linkOk_connect()
+{
+	ui->l_link->setText("已连接");
+	QHostAddress serverIp=  socket->peerAddress();
+	ui->pte_message->setPlainText("***已连接***\n");
+	ui->pte_message->appendPlainText("服务端Ip:"+serverIp.toString()+"\n\n");
+	ui->pb_close->setEnabled(true);
+	ui->pb_send->setEnabled(true);
+	ui->pb_link->setEnabled(false);
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+发起链接
+void SendWindow::on_link_click()
+{
+	int port = ui->le_port->text().toInt();
+	QString ip = ui->le_ip->text();
+	if (!(ip.isEmpty())||port == 0)
+	{
+		QHostAddress addr(ip);
+		socket->connectToHost(addr, port);
+		
+	}
+	else
+	{
+		QMessageBox window;
+		window.warning(this,"警告","请输入ip和端口",window.Ok,window.NoButton);
+	}
+	
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+获得要链接的IP和端口，通过connectToHost()函数进行链接，当链接成功会发出 connected()信号。
+*Qt IP地址的存取只能通过QHostAddress类进行。
+    存 QHostAdderss addr(ip);（在多数情况下用QList< QHostAdderss> 存储IP）
+    取 addr.toString();
+更改多关于QHostAdderss 类的说明可以转至：官网
+
+连接成功
+	connect(socket,SIGNAL(connected()),this,SLOT(on_linkOk_connect()));
+1
+void SendWindow::on_linkOk_connect()
+{
+	ui->l_link->setText("已连接");
+	QHostAddress serverIp=  socket->peerAddress();
+	ui->pte_message->setPlainText("***已连接***\n");
+	ui->pte_message->appendPlainText("服务端Ip:"+serverIp.toString()+"\n\n");
+	ui->pb_close->setEnabled(true);
+	ui->pb_send->setEnabled(true);
+	ui->pb_link->setEnabled(false);
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+发送/接收 信息
+void SendWindow::on_send_click()
+{
+		QString str = ui->le_outDatas->text();
+		if (str != "")
+		{
+			ui->pte_message->appendPlainText("发送：" + str);
+			ui->le_outDatas->clear();
+			ui->le_outDatas->setFocus();
+			QByteArray datas = str.toUtf8();
+			socket->write(datas);
+		}
+		else
+		{
+			ui->pte_message->appendHtml("警告：不支持输入空消息！\n\n");
+		}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+	connect(socket,SIGNAL(readyRead()),this,SLOT(on_read_readRead()));
+1
+void SendWindow::on_read_readRead()
+{
+	ui->pte_message->appendPlainText("接收："+socket->readAll());
+}
+1
+2
+3
+4
+以上就是本项目的主要功能代码，有问题或建议请在评论区交流，如需源码请转至：资源下载中心
