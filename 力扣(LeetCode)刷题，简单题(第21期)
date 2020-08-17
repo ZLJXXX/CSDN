@@ -1,0 +1,358 @@
+力扣(LeetCode)刷题，简单题(第21期)
+
+不脱发的程序猿 2020-08-14 10:05:45  276  收藏 8
+分类专栏： 力扣、牛客刷题 文章标签： 力扣刷题leetcode第21期简单题
+版权
+
+NB-IoT
+本专栏系统地介绍NB-IoT关键技术、网络体系与应用架构、应用系统组件以及终端硬件设计的基础上，给出了一个NB-IoT系统设计从终端到平台的每个部分完整的实践与操作步骤，结合NB-IoT智慧路灯项目进行剖析，使学习者迅速掌握物联网应用项目的开发技巧。
+不脱发的程序猿
+¥19.90
+分享赚￥1.99 订阅博主
+目录
+第1题：最大连续1的个数
+
+第2题：相同的树
+
+第3题：检查平衡性
+
+第4题：仅仅反转字母
+
+第5题：检测大写字母
+
+第6题：在区间范围内统计奇数数目
+
+第7题：二分查找
+
+第8题：字符串轮转
+
+第9题：公交车站间的距离
+
+第10题：有效的括号（2020 哔哩哔哩校招笔试题）
+
+力扣(LeetCode)定期刷题，每期10道题，业务繁重的同志可以看看我分享的思路，不是最高效解决方案，只求互相提升。
+
+第1题：最大连续1的个数
+试题要求如下：
+
+
+
+回答（C语言）：
+
+int findMaxConsecutiveOnes(int* nums, int numsSize){
+    int temp = 0;
+ 
+    for(int i = 0,cou = 0; i < numsSize; i++){
+        if(nums[i] == 1){
+            cou++;
+        }
+        else{
+            cou = 0;
+        }
+ 
+        if(cou > temp){
+            temp = cou;
+        }
+    }
+ 
+    return temp;
+}
+运行效率如下所示：
+
+
+
+第2题：相同的树
+试题要求如下：
+
+
+
+回答（C语言）：
+
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     struct TreeNode *left;
+ *     struct TreeNode *right;
+ * };
+ */
+ 
+bool isSameTree(struct TreeNode* p, struct TreeNode* q) {
+    if (p == NULL && q == NULL) {
+        return true;
+    } else if (p == NULL || q == NULL) {
+        return false;
+    } else if (p->val != q->val) {
+        return false;
+    } else {
+        return isSameTree(p->left, q->left) && isSameTree(p->right, q->right);
+    }
+}
+运行效率如下所示：
+
+
+
+第3题：检查平衡性
+试题要求如下：
+
+
+
+回答（C语言）：
+
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     struct TreeNode *left;
+ *     struct TreeNode *right;
+ * };
+ */
+ 
+#define MAX(a, b)  ((a) < (b) ? (b) : (a))
+ 
+bool CoreFunc(struct TreeNode* root, int* depth)
+{
+    if (NULL == root) {
+        *depth = 0;
+        return true;
+    }
+    if (NULL == root->left && NULL == root->right) {
+        *depth = 1;
+        return true;
+    }
+    int left = 0;
+    int right = 0;
+    bool ret = CoreFunc(root->left, &left) && CoreFunc(root->right, &right);
+    int res = left > right ? left - right : right - left;
+    *depth = MAX(left, right) + 1;
+    if (ret && res <= 1) {
+        return true;
+    } else {
+        return false;
+    }
+}
+ 
+bool isBalanced(struct TreeNode* root)
+{
+    if (NULL == root) {
+        return true;
+    }
+    int depth = 0;
+    return CoreFunc(root, &depth);
+}
+运行效率如下所示：
+
+
+
+第4题：仅仅反转字母
+试题要求如下：
+
+
+
+回答（C语言）：
+
+char * reverseOnlyLetters(char * S){
+    int i=0,j=strlen(S)-1;
+    char tmp=0;
+ 
+    while(i<j){
+        if(!((S[i] >= 'a' && S[i] <= 'z')  || (S[i] >= 'A' && S[i] <= 'Z')))//排除i指向非字母的情况
+        {
+            i++;
+            continue;
+        }
+        if(!((S[j] >= 'a' && S[j] <= 'z')  || (S[j] >= 'A' && S[j] <= 'Z')))//排除j指向非字母的情况
+        {
+            j--;
+            continue;
+        }
+ 
+        tmp=S[i];//交换字母
+        S[i]=S[j];
+        S[j]=tmp;
+ 
+        i++;
+        j--;
+    }
+    return S;
+}
+运行效率如下所示：
+
+
+
+第5题：检测大写字母
+试题要求如下：
+
+
+
+回答（C语言）：
+
+bool detectCapitalUse(char * word){
+    int len = strlen(word);
+    int cnt = 0;
+ 
+    for(int i = 0;i<len;i++){
+        if((word[i] >= 'A')&&(word[i] <= 'Z'))
+        cnt++;     
+    }
+ 
+    //对应情况1和情况3
+    if((cnt == len)||(cnt == 0)){
+        return true;
+    }
+    //对应情况2
+    else if(((word[0] >= 'A')&&(word[0] <= 'Z')&&(cnt == 1))){
+        return true;
+    }
+         
+    return false;
+}
+运行效率如下所示：
+
+
+
+第6题：在区间范围内统计奇数数目
+试题要求如下：
+
+
+
+ 
+
+回答（C语言）：
+
+int countOdds(int low, int high){
+    if((low%2 == 0) && (high%2 ==0)){
+        return (high-low)/2;
+    }
+ 
+    return (high-low)/2+1;
+}
+运行效率如下所示：
+
+
+
+第7题：二分查找
+试题要求如下：
+
+
+
+回答（C语言）：
+
+int search(int* nums, int numsSize, int target){
+    int left = 0;
+    int right = numsSize - 1;
+    int mid = 0;
+ 
+    while (left <= right) {
+        mid = left + (right - left) / 2;
+        
+        if (nums[mid] == target) {
+            return mid;
+        } else if (nums[mid] < target) {
+            left = mid + 1;
+        } else if (nums[mid] > target) {
+            right = mid - 1;
+        }
+    }
+ 
+    return -1;
+}
+运行效率如下所示：
+
+
+
+第8题：字符串轮转
+试题要求如下：
+
+
+
+回答（C语言）：
+
+bool isFlipedString(char* s1, char* s2){
+    int a = strlen(s1),b = strlen(s2);
+    if(a != b) return false;
+    int count = 0;
+ 
+    for(int i = 0; i < a; i++)
+    {
+        if(s1[i] == s2[count])
+        {
+            count++;
+        }  
+    }  
+ 
+    int m = count;
+ 
+     for(int i = 0; i < a-count; i++)
+    {
+        if(s1[i] != s2[m])
+        {
+            return false;
+        }
+       m++;
+    }
+ 
+   return true;
+}
+运行效率如下所示：
+
+
+
+第9题：公交车站间的距离
+试题要求如下：
+
+
+
+回答（C语言）：
+
+int distanceBetweenBusStops(int* distance, int distanceSize, int start, int destination){
+	int dis1 = 0, dis2 = 0;;
+	int s;
+    
+	s = start;
+ 
+	while (s != destination) {
+		dis1 += distance[s];
+		s = (s + 1) % distanceSize;
+	}
+	while (s != start) {
+		dis2 += distance[s];
+		s = (s + 1) % distanceSize;
+	}
+ 
+	return dis1 < dis2 ? dis1 : dis2;
+}
+运行效率如下所示：
+
+
+
+第10题：有效的括号（2020 哔哩哔哩校招笔试题）
+试题要求如下：
+
+
+
+回答（C语言）：
+
+bool isValid(char * s){
+    int top = 0;
+    char* stack = (char*)malloc(strlen(s));
+ 
+    if (s==NULL || strlen(s)<=0) return true;
+    
+    for (int i = 0; i<strlen(s); i++){
+        if(s[i]=='(' || s[i]=='{' || s[i]=='['){
+            stack[top++] = s[i];
+        }else{
+            if(--top < 0) return false;
+            if(s[i]==')' && stack[top] != '(') return false;
+            if(s[i]=='}' && stack[top] != '{') return false;
+            if(s[i]==']' && stack[top] != '[') return false;
+        }
+    }
+    
+    if (top > 0) return false;
+ 
+    return true;
+}
+运行效率如下所示：
+
