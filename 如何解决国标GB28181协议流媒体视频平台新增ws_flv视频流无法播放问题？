@@ -1,0 +1,56 @@
+如何解决国标GB28181协议流媒体视频平台新增ws_flv视频流无法播放问题？
+
+EasyGBS 2020-08-12 09:27:20  143  收藏 1
+分类专栏： EasyGBS 文章标签： 国标GB28181流媒体视频平台流媒体视频平台RTMP流媒体服务器
+版权
+流媒体服务器最主要的作用就是进行视频流的转码分发，比如EasyGBS视频平台，可通过国标GB28181协议将视频流转化成可播放的视频。目前EasyGBS可以输出RTMP、HLS、FLV三种格式的视频流。
+
+在新版的EasyGBS视频平台开发过程中，我们新增了ws_flv的视频流，拓宽了输出视频流的格式，但是在测试过程中却发现ws_flv视频流播放不了，显示黑屏。
+
+40.png
+
+经排查是因为项目本身使用https访问是加密的（https接入我们国标流媒体服务器视频无法播放），但此时后端返回给前端的flv地址是ws的，获取视频的地址错误，这才导致了视频无法播放。
+
+41.png
+
+所以我们在访问websocket请求连接的时候不能用ws，而是要用加密版的wss，后端在初始化流数据的时候定义一个wss的播放地址：
+
+stream = &sip.Stream{
+		StreamID:   streamid,
+		DeviceID:   sipDev.DeviceID,
+		SenderID:   sipChannel.DeviceID,
+		SenderName: sipChannel.Name,
+		SenderSeq:  subject.SenderSeq,
+		MSDeviceID: ms.Serial,
+		SSRC:       SSRC,
+		Transport:  transport,
+		UseForSnap: useForSnap,
+ 
+		StartAt:   time.Now().Format(utils.DateTimeLayout),
+		FLV:       ms.GetFLV_URL("hls", sipDev.DeviceID, subject.SenderSeq),
+		HTTPS_FLV: ms.GetHTTPS_FLV_URL("hls", sipDev.DeviceID, subject.SenderSeq),
+		RTMP:      ms.GetRTMP_URL("hls", sipDev.DeviceID, subject.SenderSeq),
+		HLS:       ms.GetHLS_URL("hls", sipDev.DeviceID, subject.SenderSeq),
+		HTTPS_HLS: ms.GetHTTPS_HLS_URL("hls", sipDev.DeviceID, subject.SenderSeq),
+		WS_FLV:    ms.GetWSFLV_URL("hls", sipDev.DeviceID, subject.SenderSeq),
+		WSS_FLV:   ms.GetWSSFLV_URL("hls", sipDev.DeviceID, subject.SenderSeq),
+		RTSP:      ms.GetRTSP_URL(sipDev.DeviceID, subject.SenderSeq),
+		CDN:       cdn,
+		Record:    sipChannel.Record,
+	}
+然后给前端返回播放地址的时候，对项目进行判断，是否需要加密，如果需要加密则返回wss加密后的地址
+
+stream.UseForSnap = false
+	flvURL := stream.FLV
+	ws_flvURL := stream.WS_FLV
+	hlsURL := stream.HLS
+	rtmpURL := stream.RTMP
+	rtspURL := stream.RTSP
+	if c.Request.TLS != nil {
+		flvURL = stream.HTTPS_FLV
+		hlsURL = stream.HTTPS_HLS
+		ws_flvURL = stream.WSS_FLV
+	}
+前端再次播放拿到wss的地址时，则播放正常。
+
+42.png
