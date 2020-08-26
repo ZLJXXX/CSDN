@@ -1,0 +1,119 @@
+3种方式限制ip访问Oracle数据库
+
+Enmotech 2020-08-18 17:57:49  461  收藏 17
+文章标签： 数据库cssiptablesssh运维
+版权
+墨墨导读：本文来自墨天轮读者投稿，分享了3种限制某个ip或某个ip段访问Oracle数据库的方式，希望对大家有帮助。
+
+
+一、概述
+本文将给大家介绍如何限制某个ip或某个ip段才能访问Oracle数据库
+
+通过sqlnet.ora
+
+通过/etc/hosts.deny和/etc/hosts.allow
+
+通过iptables
+
+
+二、正式实验
+本次实验环境是Centos6.10 + Oracle 11.2.0.4单实例，数据库服务器ip地址为192.168.31.71
+
+
+1. 通过sqlnet.ora
+a. 关闭数据库服务器上的防火墙，修改sqlnet.ora文件
+
+该文件放在$ORACLE_HOME/network/admin下，如果没有就在该目录下创建一个即可添加以下两行
+
+tcp.validnode_checking = yes
+tcp.invited_nodes = (192.168.31.71, 192.168.31.77)
+这里需要注意的是必须把本机ip地址加进来（不能写成localhost和127.0.0.1），否则监听启动会报错。
+
+b. 重启监听，让sqlnet.ora的修改生效
+
+lsnrctl stop
+lsnrctl start
+设置之后就只有这两个ip地址192.168.31.71, 192.168.31.77能访问数据库，其它ip地址访问会报ORA-12547: TNS:lost contact错误
+tcp.invited_nodes的意思是开通白名单，不在白名单中的一律拒绝访问，它也可以写成(192.168.31.*, 192.168.31.0/24)等方式，表明这个网段都能访问。
+另外还有个参数tcp.excluded_nodes，表示黑名单，这里不做介绍，有兴趣的可以自己去做做实验。
+
+
+2. 通过/etc/hosts.deny和/etc/hosts.allow
+sqlnet.ora属于数据库层面的限制，但如果一个ip能够使用root或者oracle，ssh到这台数据库服务器的话，那么它依然能够访问数据库。为了避免这种情况，这时就需要通过/etc/hosts.allow和/etc/hosts.deny去限制某个ip或者ip段才能ssh访问数据库服务器
+
+先删除前面实验添加的sqlnet.ora，然后重启监听
+
+lsnrctl stop
+lsnrctl start
+a. 修改/etc/hosts.deny
+
+在文件尾部添加一行
+
+all:all:deny
+第一个all表示禁掉所有使用tcp_wrappers库的服务，举例来说就是ssh，telnet等服务。
+第二个all表示所有网段。
+
+b. 修改/etc/hosts.allow
+
+在前面一步中我禁掉所有的网段，所以在这一步中要开通指定的网段。
+
+修改/etc/hosts.allow，在文件尾部添加
+
+all:192.168.31.71:allow
+all:192.168.31.47:allow
+格式与hosts.deny一样，第一行表示把本机放开，第二行表示给.47开通白名单
+
+下面用我另外一台机器（即不在allow中的）ssh或telnet连接71这个机器，就会出现如下报错
+
+[oracle@oracle19c1 ~]$ ssh 192.168.31.71
+ssh_exchange_identification: read: Connection reset by peer
+ 
+ 
+[oracle@oracle19c1 ~]$ telnet 192.168.31.71 22
+Trying 192.168.31.71...
+Connected to 192.168.31.71.
+Escape character is '^]'.
+Connection closed by foreign host.
+连数据库却不受影响，因为数据库服务不归hosts.deny和hosts.allow管
+
+[oracle@oracle19c1 ~]$ sqlplus sys/xxxxx@192.168.31.71:1521/orcltest as sysdba
+ 
+ 
+SQL*Plus: Release 19.0.0.0.0 - Production on Sun Aug 16 23:12:49 2020
+Version 19.3.0.0.0
+ 
+ 
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+ 
+ 
+Connected to:
+Oracle Database 11g Enterprise Edition Release 11.2.0.4.0 - 64bit Production
+With the Partitioning, OLAP, Data Mining and Real Application Testing options
+其中ip地址也可以换成以下的写法
+通配符的形式 192.168.31.*表示192.168.31这个网段
+网段/掩码 192.168.31.0/255.255.255.0也表示192.168.31这个网段
+
+
+3. 通过iptables
+sqlnet.ora能够限制数据库的访问，/etc/hosts.deny和/etc/hosts.allow能够限制ssh的访问，那有没有办法既能限制数据库的访问，也能限制ssh的访问呢，答案就是linux自带的防火墙功能了。为了实验，将前面做的修改全部清除。
+
+使用root执行以下命令
+
+service iptables start  # 打开防火墙服务
+iptables -I INPUT -s 192.168.31.0/24 -p tcp --dport 1521 -j ACCEPT  # 允许192.168.31网段的ip访问本机1521端口
+iptables -I INPUT ! -s 192.168.31.0/24 -p tcp --dport 22 -j DROP  # 拒绝非192.168.31网段的ip访问本机22端口
+service iptables save  # 规则保存到配置文件/etc/sysconfig/iptables中
+这样就同时限制了其它ip对服务器的ssh和数据库访问一些扩展知识：
+
+iptables -L -n --line-numbers  # 查看当前系统中的iptables
+iptables -D INPUT 2  # 删除input链中编号为2的规则，编号数字可以通过上一个命令得到
+三、总结
+如果只是限制其它ip对数据库的访问，使用sqlnet.ora
+
+如果要限制其它ip对数据库所在服务器上的ssh连接，使用/etc/hosts.deny和/etc/hosts.allow
+
+前面两个配合起来，基本上就能保证你的数据库安全了。但是如果你对linux的iptables很熟悉，那么直接使用iptables去限制。
+
+使用/etc/hosts.deny和iptables时一定要保证自己的操作机能连到服务器，不然很容易就把自己锁死在外面了。
+
+墨天轮原文链接：https://www.modb.pro/db/29270（复制到浏览器中打开或者点击“阅读原文”）
