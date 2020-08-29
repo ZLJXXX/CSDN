@@ -1,0 +1,390 @@
+[记录八] Vue(全家桶)+node+koa2+mysql+nginx+redis，博客全栈项目之node后台更换头像和管理员接口
+
+置顶 git小米粥 2020-08-27 15:40:09  6489  收藏 30
+分类专栏： node 计算机基础知识 js
+版权
+导语：
+
+暑假在家闲着无事，就琢磨着做一个web博客练练手，现在已经做完了，把过程分享出来给大家看看，分享一下学习经验。这是第五篇，开始编写后台接口，为前端接口提供提供基础，主要讲博客，用户接口。
+
+微信搜索 【web小馆】，回复 ”全栈博客项目“，即可获取 项目源码和后续的实战文章教程。
+
+本文的目录
+一，头像接口
+1，更换头像接口
+2，获取头像接口
+二，管理员接口
+1，上传文章接口。
+2，获取文章列表
+3，更新文章的内容
+4，上传文章的标题图片
+三，评论功能
+1，用户评论文章
+2，获取文章评论功能
+一，头像接口
+1，更换头像接口
+这个更换头像，说白了就是上传图片，类似于上传文件这种做法。具体的步骤是前端上传文件，后端接收文件，并且把它保存在服务器中（电脑文件中），然后把这个位置和对应的信息写入到数据库中，等到要查找这个图片的时候，就可以通过数据库中记录的地址，去寻找返回，把文件夹中的图片返回到前端中。
+
+const router = require('koa-router')()
+const path = require('path')
+const fs = require('fs')
+
+const { login, signup, updataavatar, updataname } = require('../controller/user')
+const { SuccessModel, ErrorModel } = require('../model/resModel')
+router.prefix('/api/user')
+
+const env = process.env.NODE_ENV
+
+router.post("/updata/avatar", async (ctx) => {
+  // 上传单个文件
+  let {body:getBody,files} = ctx.request
+  // const file = ctx.request.files.file; // 获取上传文件
+  // 创建可读流
+  if (files) {
+    const reader = fs.createReadStream(files.file.path);
+    const basename = path.basename(files.file.path)
+    let filePath = path.join(__dirname, '../','public/images') + `/${basename}`;
+    // 创建可写流
+    const upStream = fs.createWriteStream(filePath);
+    // 可读流通过管道写入可写流
+    reader.pipe(upStream);
+    if (env === 'env') {
+      avatar_url = `${ctx.origin}:8000/api/file/avatar?pic=${basename}`
+    } else {
+      avatar_url = `http://47.112.***.***:80/api/file/avatar?pic=${basename}`
+    }
+    
+    getBody = {...getBody, avatar_url}
+
+    //进行对新头像的存入数据库的操作
+    let username = ctx.session.username       //获取操作的对象的账户
+    
+    //
+    const data = await updataavatar(username, avatar_url)
+  }
+  ctx.body = new SuccessModel(getBody)
+})
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+2，获取头像接口
+这个接口类似于一个网址，然后显示一个图片，比如
+
+https://img-blog.csdnimg.cn/20200819195904573.png#pic_center
+1
+我们直接写一个get函数就可以获取到对应文件夹中的图片了。
+
+const router = require('koa-router')()
+const { SuccessModel, ErrorModel } = require('../model/resModel')
+const {
+  getBanerslist
+} = require('../controller/baners')
+router.prefix('/api/file')
+const path = require('path')
+const fs = require('fs')
+const mime = require('mime-types'); //需npm安装
+
+
+router.get('/avatar', async function (ctx, next) {
+  console.log(ctx.query.pic)
+  const url = path.join(__dirname,"../",`public/images/${ctx.query.pic}`)
+  let file = null;
+  file = fs.readFileSync(url); //读取文件
+  
+  let mimeType = mime.lookup(url); //读取图片文件类型
+  ctx.set('content-type', mimeType); //设置返回类型
+  ctx.body = file; //返回图片
+})
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+这样的两个接口以及，存入数据库地址的思想，就可以写出所有类似于上传单个文件、获取单个文件的接口了。
+
+二，管理员接口
+1，上传文章接口。
+const router = require('koa-router')()
+const { SuccessModel, ErrorModel } = require('../model/resModel')
+const path = require('path')
+const fs = require('fs')
+const {
+  newarticle,
+  updatearticle
+} = require('../controller/admin')
+router.prefix('/api/admin')
+
+const env = process.env.NODE_ENV
+router.post("/add/article", async function(ctx, next) {
+  // console.log(ctx.request.body)
+  const body = ctx.request.body
+  const data = await newarticle(body)
+  ctx.body = new SuccessModel(ctx.request.body)
+})
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+这里主要的是把前端提交的表单信息进行简单的处理，然后把对应的信息，通过sql语句进行数据库操作，存入到数据库中。
+
+2，获取文章列表
+router.get('/list', async function (ctx, next) {
+    let lei = ctx.query.lei || ''
+    const keyword = ctx.query.keyword || ''
+    // console.log(ctx.query) 
+    let num = ctx.query.num
+    // console.log(ctx.session)
+    let listData = await getList(lei, keyword, num)
+    let moreData = await getList(lei, keyword , num + 10)
+
+    let more
+    // console.log(more.length)
+    if (moreData.length > 0) {
+      more = 'true'
+    } else {
+      more = 'false'
+    }
+    ctx.body = new SuccessModel(listData,more)
+})
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+3，更新文章的内容
+前端通过id去得到原本的数据库里面的内容，然后修改通过表单提交到后台程序，这里的更新文章接口也是一个同上传文章一样的步骤，就是将原本数据库里面的内容给覆盖了。
+
+router.post("/updata/article", async function(ctx, next) {
+  // console.log(ctx.request.body)
+  const body = ctx.request.body
+  const data = await updatearticle(body)
+  ctx.body = new SuccessModel(ctx.request.body)
+})
+
+1
+2
+3
+4
+5
+6
+7
+4，上传文章的标题图片
+router.post("/updata/pic",(ctx) => {
+  // 上传单个文件
+  let {body:getBody,files} = ctx.request
+  // const file = ctx.request.files.file; // 获取上传文件
+  // 创建可读流
+  if (files) {
+    const reader = fs.createReadStream(files.file.path);
+    const basename = path.basename(files.file.path)
+    let filePath = path.join(__dirname, '../','public/uploads/images') + `/${basename}`;
+    // 创建可写流
+    const upStream = fs.createWriteStream(filePath);
+    // 可读流通过管道写入可写流
+    reader.pipe(upStream);
+    if (env === 'env') {
+      avatar_url = `${ctx.origin}:8000/api/file/pic?pic=${basename}`
+    } else {
+      avatar_url = `47.112.***.***:80/api/file/pic?pic=${basename}`
+    }
+    getBody = {...getBody, avatar_url}
+  }
+  ctx.body = new SuccessModel(getBody)
+})
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+三，评论功能
+1，用户评论文章
+const router = require('koa-router')()
+const {
+  getList,
+  getDetail,
+  getComment,
+  postComment,
+  addHit,
+  addGood,
+  addLike,
+  infolike,
+  infogood,
+  subGood,
+  subLike
+} = require('../controller/article')
+const { SuccessModel, ErrorModel } = require('../model/resModel')
+router.prefix('/api/article')
+
+router.post('/postcomments', async function (ctx, next) {
+  const { comments, id } = ctx.request.body
+  // console.log(comments, id)
+  const data = await postComment(comments, id)
+  // console.log(data)
+  if (data == null) {
+    ctx.body = new ErrorModel(data)
+    return
+  }
+  ctx.body = new SuccessModel(data)
+})
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+2，获取文章评论功能
+router.get('/comments', async function (ctx, next) {
+  const data = await getComment(ctx.query.id)
+
+  // console.log(data)
+  if (data == null) {
+    ctx.body = new ErrorModel(data)
+    return
+  }
+  ctx.body = new SuccessModel(data)
+})
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+把对应文章的用户评论json数据进行返回到前端，前端拿到数据后就在页面上的评论框中显示出来。
+
+通过表单提交，获取用户的评论信息，以及文章的id，将信息通过sql语句写入到数据库中。
+
+今天的分享就到这里了，接口太多了明天接着续上，下期见啦，或者可以直接关注公众号【web小馆】，回复全栈博客项目，即可获得项目源码。
+
+在这里插入图片描述
+
+你们的赞就是对我最大的鼓励。谢谢~
+
+微信搜索【web小馆】，回复全栈博客项目，即可获取项目源码和后续的实战文章教程。每天用最简单朴实的语言，潜移默化的提升你的计算机基础知识和前端技术。小米粥，一个专注的web全栈工程师，我们下期再见！
+
+在这里插入图片描述
+node后台
