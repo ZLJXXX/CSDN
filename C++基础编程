@@ -1,0 +1,183 @@
+c++基础编程——简介，安装及基础语法
+
+嗷嗷嗷嗷嗷嗷嗷嗷嗷嗷嗷嗷嗷嗷嗷嗷嗷嗷嗷呜 2020-08-27 10:34:05  513  收藏 21
+分类专栏： C++
+版权
+c++基础编程——简介，安装及基础语法
+C++ 是一种静态类型的、编译式的、通用的、大小写敏感的、不规则的编程语言，支持过程化编程、面向对象编程和泛型编程。
+
+C++ 被认为是一种中级语言，它综合了高级语言和低级语言的特点。
+
+C++ 是由 Bjarne Stroustrup 于 1979 年在新泽西州美利山贝尔实验室开始设计开发的。C++ 进一步扩充和完善了 C 语言，最初命名为带类的C，后来在 1983 年更名为 C++。
+
+C++ 是 C 的一个超集，事实上，任何合法的 C 程序都是合法的 C++ 程序。
+
+注意：使用静态类型的编程语言是在编译时执行类型检查，而不是在运行时执行类型检查。
+
+标准库
+标准的 C++ 由三个重要部分组成：
+
+核心语言，提供了所有构件块，包括变量、数据类型和常量，等等。
+
+C++ 标准库，提供了大量的函数，用于操作文件、字符串等。
+
+标准模板库（STL），提供了大量的方法，用于操作数据结构等。
+
+ANSI 标准
+ANSI 标准是为了确保 C++ 的便携性 —— 您所编写的代码在 Mac、UNIX、Windows、Alpha 计算机上都能通过编译。
+
+由于 ANSI 标准已稳定使用了很长的时间，所有主要的 C++ 编译器的制造商都支持 ANSI 标准。
+
+学习 C++
+学习 C++，关键是要理解概念，而不应过于深究语言的技术细节。
+
+学习程序设计语言的目的是为了成为一个更好的程序员，也就是说，是为了能更有效率地设计和实现新系统，以及维护旧系统。
+
+C++ 支持多种编程风格。您可以使用 Fortran、C、Smalltalk 等任意一种语言的编程风格来编写代码。每种风格都能有效地保证运行时间效率和空间效率。
+
+C++ 的使用
+基本上每个应用程序领域的程序员都有使用 C++。
+
+C++ 通常用于编写设备驱动程序和其他要求实时性的直接操作硬件的软件。
+
+C++ 广泛用于教学和研究。
+
+任何一个使用苹果电脑或 Windows PC 机的用户都在间接地使用 C++，因为这些系统的主要用户接口是使用 C++ 编写的。
+
+面向对象
+C++ 完全支持面向对象的程序设计，包括面向对象开发的四大特性：
+
+封装
+
+抽象
+
+继承
+
+多态
+
+Windows安装c++
+Windows 上的安装
+为了在 Windows 上安装 GCC，您需要安装 MinGW。为了安装 MinGW，请访问 MinGW 的主页 http://www.mingw.org，进入 MinGW 下载页面，下载最新版本的 MinGW 安装程序，命名格式为 MinGW-.exe。
+
+当安装 MinGW 时，您至少要安装 gcc-core、gcc-g++、binutils 和 MinGW runtime，但是一般情况下都会安装更多其他的项。
+
+添加您安装的 MinGW 的 bin 子目录到您的 PATH 环境变量中，这样您就可以在命令行中通过简单的名称来指定这些工具。
+
+当完成安装时，您可以从 Windows 命令行上运行 gcc、g++、ar、ranlib、dlltool 和其他一些 GNU 工具。
+
+第一行代码
+#include <iostream>
+using namespace std;
+int main()
+{
+    cout << "Hello, world!" << endl;
+    return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+这个程序将会打印Hello, world!
+
+解析
+C++ 语言定义了一些头文件，这些头文件包含了程序中必需的或有用的信息。上面这段程序中，包含了头文件 <iostream>。
+using namespace std; 告诉编译器使用 std 命名空间。命名空间是 C++ 中一个相对新的概念。
+int main() 是主函数，程序从这里开始执行。
+cout << "Hello，world!"<< endl;会在屏幕上显示消息 “Hello，world!”。
+return 0; 终止 main()函数，并向调用进程返回值 0。
+
+编译和执行c++程序
+打开一个文本编辑器，添加上述代码。
+
+保存文件为 hello.cpp。
+
+打开命令提示符，进入到保存文件所在的目录。
+
+键入 g++ hello.cpp ，输入回车，编译代码。如果代码中没有错误，命令提示符会跳到下一行，并生成 a.out 可执行文件。
+
+现在，键入 ’ a.out’ 来运行程序。
+
+您可以看到屏幕上显示Hello, world!。
+
+如图：
+在这里插入图片描述
+
+C++ 中的分号
+在 C++ 中，分号是语句结束符。也就是说，每个语句必须以分号结束。它表明一个逻辑实体的结束。
+C++ 不以行末作为结束符的标识，因此，您可以在一行上放置多个语句。但为了代码的整洁明了，通常会有缩进。
+
+C++关键字
+ISO C++98/03关键字共63个
+
+asm
+do
+if
+return
+typedef
+auto
+double
+inline
+short
+typeid
+bool
+dynamic_cast
+int
+signed
+typename
+break
+else
+long
+sizeof
+union
+case
+enum
+mutable
+static
+unsigned
+catch
+explicit
+namespace
+static_cast
+using
+char
+export
+new
+struct
+virtual
+class
+extern
+operator
+switch
+void
+const
+false
+private
+template
+volatile
+const_cast
+float
+protected
+this
+wchar_t
+continue
+for
+public
+throw
+while
+default
+friend
+register
+true
+delete
+goto
+reinterpret_cast
+try
+
+有点乱，见谅。
+
+C++ 中的空格
+只包含空格的行，被称为空白行，可能带有注释，C++ 编译器会完全忽略它。
+在 C++ 中，空格用于描述空白符、制表符、换行符和注释。空格分隔语句的各个部分，让编译器能识别语句中的某个元素（比如 int）在哪里结束，下一个元素在哪里开始
