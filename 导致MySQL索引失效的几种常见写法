@@ -1,0 +1,76 @@
+导致MySQL索引失效的几种常见写法
+
+一个程序员的成长 2020-09-06 15:15:41  1678  收藏 60
+文章标签： mysql 数据库 java sql 索引
+版权
+最近一直忙着处理原来老项目遗留的一些SQL优化问题，由于当初表的设计以及字段设计的问题，随着业务的增长，出现了大量的慢SQL，导致MySQL的CPU资源飙升，基于此，给大家简单分享下这些比较使用的易于学习和使用的经验。
+
+这次的话简单说下如何防止你的索引失效。
+
+再说之前我先根据我最近的经验说下我对索引的看法，我觉得并不是所以的表都需要去建立索引，对于一些业务数据，可能量比较大了，查询数据已经有了一点压力，那么最简单、快速的办法就是建立合适的索引，但是有些业务可能表里就没多少数据，或者表的使用频率非常不高的情况下是没必要必须要去做索引的。就像我们有些表，2年了可能就10来条数据，有索引和没索引性能方面差不多多少。
+
+索引只是我们优化业务的一种方式，千万为了为了建索引而去建索引。
+
+下面是我此次测试使用的一张表结构以及一些测试数据
+
+CREATE TABLE `user` (
+  `id` int(5) unsigned NOT NULL AUTO_INCREMENT,
+  `create_time` datetime NOT NULL,
+  `name` varchar(5) NOT NULL,
+  `age` tinyint(2) unsigned zerofill NOT NULL,
+  `sex` char(1) NOT NULL,
+  `mobile` char(12) NOT NULL DEFAULT '',
+  `address` char(120) DEFAULT NULL,
+  `height` varchar(10) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_createtime` (`create_time`) USING BTREE,
+  KEY `idx_name_age_sex` (`name`,`sex`,`age`) USING BTREE,
+  KEY `idx_ height` (`height`) USING BTREE,
+  KEY `idx_address` (`address`) USING BTREE,
+  KEY `idx_age` (`age`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=261 DEFAULT CHARSET=utf8;
+INSERT INTO `bingfeng`.`user`(`id`, `create_time`, `name`, `age`, `sex`, `mobile`, `address`, `height`) VALUES (1, '2019-09-02 10:17:47', '冰峰', 22, '男', '1', '陕西省咸阳市彬县', '175');
+INSERT INTO `bingfeng`.`user`(`id`, `create_time`, `name`, `age`, `sex`, `mobile`, `address`, `height`) VALUES (2, '2020-09-02 10:17:47', '松子', 13, '女', '1', NULL, '180');
+INSERT INTO `bingfeng`.`user`(`id`, `create_time`, `name`, `age`, `sex`, `mobile`, `address`, `height`) VALUES (3, '2020-09-02 10:17:48', '蚕豆', 20, '女', '1', NULL, '180');
+INSERT INTO `bingfeng`.`user`(`id`, `create_time`, `name`, `age`, `sex`, `mobile`, `address`, `height`) VALUES (4, '2020-09-02 10:17:47', '冰峰', 20, '男', '17765010977', '陕西省西安市', '155');
+INSERT INTO `bingfeng`.`user`(`id`, `create_time`, `name`, `age`, `sex`, `mobile`, `address`, `height`) VALUES (255, '2020-09-02 10:17:47', '竹笋', 22, '男', '我测试下可以储存几个中文', NULL, '180');
+INSERT INTO `bingfeng`.`user`(`id`, `create_time`, `name`, `age`, `sex`, `mobile`, `address`, `height`) VALUES (256, '2020-09-03 10:17:47', '冰峰', 21, '女', '', NULL, '167');
+INSERT INTO `bingfeng`.`user`(`id`, `create_time`, `name`, `age`, `sex`, `mobile`, `address`, `height`) VALUES (257, '2020-09-02 10:17:47', '小红', 20, '', '', NULL, '180');
+INSERT INTO `bingfeng`.`user`(`id`, `create_time`, `name`, `age`, `sex`, `mobile`, `address`, `height`) VALUES (258, '2020-09-02 10:17:47', '小鹏', 20, '', '', NULL, '188');
+INSERT INTO `bingfeng`.`user`(`id`, `create_time`, `name`, `age`, `sex`, `mobile`, `address`, `height`) VALUES (259, '2020-09-02 10:17:47', '张三', 20, '', '', NULL, '180');
+INSERT INTO `bingfeng`.`user`(`id`, `create_time`, `name`, `age`, `sex`, `mobile`, `address`, `height`) VALUES (260, '2020-09-02 10:17:47', '李四', 22, '', '', NULL, '165');
+单个索引
+1、使用!= 或者 <> 导致索引失效
+SELECT * FROM `user` WHERE `name` != '冰峰';
+我们给name字段建立了索引，但是如果!= 或者 <> 这种都会导致索引失效，进行全表扫描，所以如果数据量大的话，谨慎使用
+
+
+可以通过分析SQL看到，type类型是ALL，扫描了10行数据，进行了全表扫描。<>也是同样的结果。
+
+2、类型不一致导致的索引失效
+在说这个之前，一定要说一下设计表字段的时候，千万、一定、必须要保持字段类型的一致性，啥意思？比如user表的id是int自增，到了用户的账户表user_id这个字段，一定、必须也是int类型，千万不要写成varchar、char什么的骚操作。
+
+SELECT * FROM `user` WHERE height= 175;
+这个SQL诸位一定要看清楚，height表字段类型是varchar，但是我查询的时候使用了数字类型，因为这个中间存在一个隐式的类型转换，所以就会导致索引失效，进行全表扫描。
+
+
+现在明白我为啥说设计字段的时候一定要保持类型的一致性了不，如果你不保证一致性，一个int一个varchar，在进行多表联合查询（eg: 1 = '1'）必然走不了索引。
+
+遇到这样的表，里面有几千万数据，改又不能改，那种痛可能你们暂时还体会。
+
+少年们，切记，切记。
+
+3、函数导致的索引失效
+SELECT * FROM `user` WHERE DATE(create_time) = '2020-09-03';
+如果你的索引字段使用了索引，对不起，他是真的不走索引的。
+
+
+4、运算符导致的索引失效
+SELECT * FROM `user` WHERE age - 1 = 20;
+如果你对列进行了（+，-，*，/，!）, 那么都将不会走索引。
+
+
+5、OR引起的索引失效
+SELECT * FROM `user` WHERE `name` = '张三' OR height = '175';
+OR导致索引是在特定情况下的，并不是所有的OR都是使索引失效，如果OR连接的是同一个字段，那么索引不会失效，反之索引失效。
+
