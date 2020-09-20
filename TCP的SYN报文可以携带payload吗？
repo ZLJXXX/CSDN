@@ -1,0 +1,204 @@
+TCP的SYN报文可以携带payload吗？
+
+dog250 2020-09-12 08:27:57  1678  收藏 5
+文章标签： TCP syn
+版权
+对于敲门服务，是不是厌倦了复杂繁琐的服务端配置？
+
+Send TCP SYN packet with payload?
+
+众所周知，TCP的SYN报文是不能携带payload的，因为：
+
+序列号还没有协商号，无法确定数据的序列号区间。
+接收窗口还没有确定，不知道payload能不能被接收。
+…
+等等，等等…
+
+烦透了！在过程中，我非常讨厌去讨论标准，讨厌有人在耳旁叨叨类似“RFC规定…但没有强制…”，“Intel手册XXX…但是…”，正如“C语言未初始化的变量到底是多少”这个问题一样无趣。
+
+实际动手试一下不就好了吗？
+
+请看客户端为SYN报文增加裸数据的代码：
+
+#include <linux/module.h>
+#include <net/netfilter/nf_conntrack.h>
+#include <linux/netfilter/nf_conntrack_common.h>
+#include <net/tcp.h>
+
+int port = 22;
+module_param(port, int, 0644);
+
+char *templ = NULL;
+module_param(templ, charp, 0);
+
+unsigned int knock_out_hook(void *priv, struct sk_buff *skb,
+                             const struct nf_hook_state *state)
+{
+	struct iphdr *iph = ip_hdr(skb);
+	struct tcphdr *th = NULL;
+	unsigned int extra, len;
+	char *cookie;
+	struct sock *sk = skb->sk;
+
+	if (templ == NULL)
+		return NF_ACCEPT;
+
+	if (iph->version != 4 || iph->protocol != IPPROTO_TCP)
+		return NF_ACCEPT;
+
+	iph = ip_hdr(skb);
+	th = (struct tcphdr *)((unsigned char *)iph + (iph->ihl * 4));
+
+	if (ntohs(th->dest) != port)
+		return NF_ACCEPT;
+
+	if (!th->syn) // 仅仅处理SYN报文
+		return NF_ACCEPT;
+
+	cookie = kmalloc(128, GFP_ATOMIC);
+	memcpy(cookie, templ, strlen(templ));
+	extra = strlen(templ);
+	skb_put(skb, extra);
+	memcpy((char *)th + th->doff*4, cookie, extra);
+	len = ntohs(iph->tot_len) + extra;
+	iph->tot_len = htons(len);
+	iph->check = 0;
+	ip_send_check(iph);
+	if (sk) { // 重算校验码
+		skb_pull(skb, sizeof(struct iphdr));
+		inet_csk(sk)->icsk_af_ops->send_check(sk, skb);
+		skb_push(skb, sizeof(struct iphdr));
+	}
+
+	return NF_ACCEPT;
+}
+
+static struct nf_hook_ops knock_out_ops = {
+	.hook     = knock_out_hook,
+	.pf       = AF_INET,
+	.hooknum  = NF_INET_LOCAL_OUT,
+	.priority = NF_IP_PRI_LAST,
+};
+
+static int __init knock_init(void)
+{
+	if (nf_register_net_hook(&init_net, &knock_out_ops) < 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static void __exit knock_exit(void)
+{
+	nf_unregister_net_hook(&init_net, &knock_out_ops);
+}
+
+module_init(knock_init);
+module_exit(knock_exit);
+MODULE_LICENSE("GPL");
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+OK，来来来，让我们试一下。首先在客户端加载上述代码编译成的模块：
+
+insmod ./padding.ko port=22 templ="ZheJiang_WenZhou_Skinshoe_Wet_Rain_Flooding_Water_Will_Not_Fat"
+1
+然后你会发现从这台客户端发起的SSH连接是通的：
+在这里插入图片描述
+赫然的“浙江温州皮鞋湿，下雨进水不会胖”被padding到了后面，哦，显然这句话的英文是不对的，正确的翻译应该是 “Zhejiang Wenzhou skinshoe wet，down rain in water not can fat！”
+
+同样，找一个Win7系统作为服务端，去telnet它的5357端口，依然是通的：
+在这里插入图片描述
+所以，不管标准是怎样的，可以猜测，在大多数情况下，这么玩是OK的。
+
+也许又有人怼了：
+
+在TCP的序列号都还没有协商好的情况下，你怎么保证SYN包携带的数据可以可靠到达？
+在接收窗口都还没有的情况下，你怎么保证对端有足够的空间收纳SYN包携带的数据？
+…
+我不需要保证，我甚至不需要这些数据对TCP本身有用。但它还是有用的：
+
+可以直接作为敲门报文，如此一来服务端就不需要那么复杂的ipset或者nf_conntrack配置了。
+可以在TCP握手前向服务端推送更多关于客户端的信息，从而影响服务端SYN/ACK中Option的确定。
+可以作为TCP握手的带外信息，让服务端更了解客户端。
+…
+是不是每一个纯ACK报文均可以携带这么一段padding上去的数据呢？一方面这种数据不需要可靠按序到达，另一方面它确实可以作为带外数据存在。答案显然是肯定的。
+
+不要为了捍卫标准而捍卫标准，那是学界的事，工程永远都是实用主义优先。
+
+浙江温州皮鞋湿，下雨进水不会胖。
