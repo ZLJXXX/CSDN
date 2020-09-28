@@ -1,0 +1,421 @@
+SpringBoot总结（十四）——SpringBoot整合JDBCTemplate及Druid连接池
+
+浅殇忆流年 2020-09-24 13:57:55  847  收藏 42
+分类专栏： Spring Boot
+版权
+【第一部分】历史文章：
+SpringBoot总结（一）——第一个SpringBoot项目
+SpringBoot总结（二）——Spring Boot的自动配置
+SpringBoot总结（三）——SpringBoot的配置文件
+SpringBoot总结（四）——@Value和@ConfigurationProperties的区别
+SpringBoot总结（五）——@PropertySource注解与@ImportResource注解
+SpringBoot总结（六）——SpringBoot配置文件占位符
+SpringBoot总结（七）——Profile的使用
+SpringBoot总结（八）——配置文件的加载位置
+SpringBoot总结（九）——@Conditional注解与自动配置报告
+SpringBoot总结（十）——SpringBoot+Mybatis实现数据库的CRUD(从创建到实现【超详细附代码】)
+SpringBoot总结（十一）——SpringBoot的静态资源映射规则
+SpringBoot总结（十二）——登录界面的实现
+SpringBoot总结（十三）——修改嵌入式Servlet容器配置
+
+SpringBoot整合JDBCTemplate
+本篇文章将会介绍用SpringBoot整合JDBCTemplate来实现简单的增删改查的功能、及通过SpringBoot整合Druid数据库连接池实时监控数据库的连接信息 ，为优化数据库性能提供更好的指导。
+
+文章目录
+SpringBoot整合JDBCTemplate
+前言
+一、创建数据库
+二、项目结构
+三、导入依赖
+四、配置数据库连接信息
+五、创建实体类
+六、创建数据库访问层（DAO）
+七、创建Controller
+八、创建Service
+九、整合Druid数据库连接池
+9.1、配置Druid的监控功能
+9.2、配置Druid
+十、启动项目
+十一、整合结果展示
+总结
+前言
+在使用JDBCTemplate之前，我们先来了解一下JDBC。它是java用于连接数据库的规范，也就是用于执行数据库SQL语句的java API。是由一组用java语言编写的类和接口组成，为大部分关系型数据库提供了访问接口。
+而JDBC每次使用前进行数据库的连接，然后处理SQL语句、传值、关闭数据库等，如果都由开发人员编写代码，很容易出错，可能会出现在使用完成以后，数据库连接忘记关闭的情况，从而导致连接被占用降低性能，为了减少这种可能的错误，减少开发人员的工作量，JDBCTemplate就被设计出来了。
+
+JdbcTemplate是Spring提供的一套JDBC模板框架，利用AOP技术来解决直接使用JDBC时大量重复代码的问题。JdbcTemplate虽然没有MyBatis那么的灵活，但是比直接使用JDBC要方便很多。
+下面就通过一个实例来具体介绍JDBCTemplate的使用：
+
+开发工具及环境： IDEA、Maven、jdk1.8、Mysql、postman、
+
+一、创建数据库
+创建表（book）在这里插入图片描述
+
+二、项目结构
+在这里插入图片描述
+
+三、导入依赖
+在pom.xml文件中引入下面依赖：
+
+ <!--        引入jdbc-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <!--        引入druid-->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.9</version>
+        </dependency>
+
+        <!--        引入mysql-->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.37</version>
+            <scope>runtime</scope>
+        </dependency>
+<!--        引入log4j-->
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+        </dependency>
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+四、配置数据库连接信息
+在这里使用的是application.yml的配置文件：
+
+spring:
+  datasource:
+    username: root
+    password: 123
+    url: jdbc:mysql://localhost:3306/jdbctemplate?serverTimezone=UTC&useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.jdbc.Driver
+#    使用Druid数据源
+    type: com.alibaba.druid.pool.DruidDataSource
+
+
+
+    initialSize: 5
+    minIdle: 5
+    maxActive: 20
+    maxWait: 60000
+    timeBetweenEvictionRunsMillis: 60000
+    minEvictableIdleTimeMillis: 300000
+    validationQuery: SELECT 1 FROM DUAL
+    testWhileIdle: true
+    testOnBorrow: false
+    testOnReturn: false
+    poolPreparedStatements: true
+      #   配置监控统计拦截的filters，stat:监控统计、Log4j:日志记录、wall:防御sql注入
+    filters: stat,wall,log4j
+    maxPoolPreparedStatementPerConnectionSize: 20
+    useGlobalDataSourceStat: true
+    connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=500
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+五、创建实体类
+Book.java
+
+package com.example.entity;
+
+/**
+ * @author 2017810402084
+ */
+public class Book {
+    private Integer id;
+    private String name;
+    private String author;
+
+    public Book() {
+    }
+
+    public Book(Integer id, String name, String author) {
+        this.id = id;
+        this.name = name;
+        this.author = author;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    @Override
+    public String toString() {
+        return "Book{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", author='" + author + '\'' +
+                '}';
+    }
+}
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+六、创建数据库访问层（DAO）
+BookDao.java
+
+package com.example.dao;
+
+import com.example.entity.Book;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+/**
+ * @author 2017810402084
+ */
+
+@Repository
+public class BookDao {
+
+    @Autowired
+    JdbcTemplate  jdbcTemplate;
+
+    public int addBook(Book book) {
+        return jdbcTemplate.update("insert into book(name,author) values (?,?)",book.getName(),book.getAuthor());
+    }
+
+    public int updateBook(Book book) {
+        return jdbcTemplate.update("update book set name = ?,author = ? where id = ?" ,book.getName(),book.getAuthor(),book.getId());
+    }
+
+    public int deleteBook(Integer id) {
+        return jdbcTemplate.update("delete from book where id = ?",id);
+    }
+
+    public Book getBookById(Integer id) {
+        return jdbcTemplate.queryForObject("select *  from book where id = ?",new BeanPropertyRowMapper<>(Book.class),id);
+    }
+
+    public List<Book> getAllBooks() {
+        return jdbcTemplate.query("select *  from book",new BeanPropertyRowMapper<>(Book.class));
+    }
+}
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+在jdbcTemplate中，增删改操作主要使用update和batchUpdate方法来完成的。
+query和queryForObject方法主要来完成查询的功能。
+七、创建Controller
+BookController.java
+
+package com.example.controller;
+
+import com.example.entity.Book;
+import com.example.service.BookService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+
+import java.util.List;
+
+/**
+ * @author 2017810402084
+ */
+
+@RestController
+@RequestMapping("/book")
+public class BookController {
+
+    @Autowired
+    private BookService bookService;
+
+    @RequestMapping(value = "/addBook")
+    public String addBook() {
+        Book book = new Book("数据库","李四");
+        int result =  bookService.addBook(book);
+        if(result >0) {
+            return "数据插入成功";
+        }else {
+            return "数据插入失败";
+        }
+
+    }
+
+    @RequestMapping(value = "/getBookById")
+    public Book getBookById(Integer id){
+        try {
+            Book bookresult = bookService.getBookById(id);
+            if(bookresult != null) {
+                return bookresult;
+            }else {
+                return null;
+            }
+        }catch (Exception e) {
+            return null;
+        }
+    }
+
+    @RequestMapping(value = "/getBooksList")
+    public List<Book> getBooksList() {
+        return bookService.getAllBooks();
+    }
+}
