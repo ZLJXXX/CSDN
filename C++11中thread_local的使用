@@ -1,0 +1,63 @@
+C++11中thread_local的使用
+
+fengbingchun 2020-09-20 12:51:46  903  收藏 20
+分类专栏： C/C++/C++11 文章标签： thread_local
+版权
+C++11中的thread_local是C++存储期的一种，属于线程存储期。存储期定义C++程序中变量/函数的范围(可见性)和生命周期。C++程序中可用的存储期包括auto、register、static、extern、mutable和thread_local。这些说明符放置在它们所修饰的类型之前。
+
+线程局部存储(Thread Local Storage，TLS)是一种存储期(storage duration)，对象的存储是在线程开始时分配，线程结束时回收，每个线程有该对象自己的实例。这种对象的链接性(linkage)可以是静态的也可是外部的。TLS的一个例子是用全局变量errno表示错误号。这可能在多线程并发时产生同步错误。线程局部存储的errno是个解决办法。
+
+对于Windows系统来说，全局变量或静态变量会被放到".data"或".bss"段中，但当使用__declspec(thread)定义一个线程私有变量的时候，编译器会把这些变量放到PE文件的".tls"段中。当系统启动一个新的线程时，它会从进程的堆中分配一块足够大小的空间，然后把".tls"段中的内容复制到这块空间中，于是每个线程都有自己独立的一个".tls"副本。所以对于用__declspec(thread)定义的同一个变量，它们在不同线程中的地址都是不一样的。对于一个TLS变量来说，它有可能是一个C++的全局对象，那么每个线程在启动时不仅仅是复制".tls"的内容那么简单，还需要把这些TLS对象初始化，必须逐个地调用它们的全局构造函数，而且当线程退出时，还要逐个地将它们析构，正如普通的全局对象在进程启动和退出时都要构造、析构一样。Windows PE文件的结构中有个叫数据目录的结构。它总共有16个元素，其中有一元素下标为IMAGE_DIRECT_ENTRY_TLS，这个元素中保存的地址和长度就是TLS表(IMAGE_TLS_DIRECTORY结构)的地址和长度。TLS表中保存了所有TLS变量的构造函数和析构函数的地址，Windows系统就是根据TLS表中的内容，在每次线程启动或退出时对TLS变量进行构造和析构。TLS表本身往往位于PE文件的".rdata"段中。
+
+C++11引入了thread_local关键字用于下述情形：(1).命名空间(全局)变量；(2).文件静态变量；(3).函数静态变量；(4).静态成员变量。此外，不同编译器提供了各自的方法声明线程局部变量。thread_local作为类成员变量时必须是static的。
+
+C++11中的thread_local关键字仅可允许使用在：命名空间范围内声明的对象；块范围内声明的对象；静态数据成员。它指示对象具有线程存储期(thread storage duration)。可以将其与static或extern组合以分别指定内部或外部链接(始终具有外部链接的静态数据成员除外)，但是附加的static不会影响存储期。具有不同范围的内部或外部链接的thread_local变量的名称可以引用相同或不同的实例，具体取决于代码是在同一线程中执行还是在不同线程中执行。
+
+当你声明一个thread_local变量时，每个线程都有其自己的副本。当你通过名称引用它时，将使用与当前线程关联的副本。
+
+如果类的成员函数内定义了thread_local变量，则对于同一个线程内的该类的多个对象都会共享一个变量实例，并且只会在第一次执行这个成员函数时初始化这个变量实例，这一点是跟类的静态成员变量类似的。
+
+以上内容主要整理自：维基百科  cppreference
+
+以下为测试代码：
+
+#include "funset.hpp"
+#include <thread>
+#include <mutex>
+#include <iostream>
+#include <string>
+ 
+///
+// reference: https://en.cppreference.com/w/cpp/language/storage_duration
+namespace {
+ 
+thread_local unsigned int rage = 1;
+std::mutex cout_mutex;
+ 
+void increase_rage(const std::string& thread_name)
+{
+	++rage; // modifying outside a lock is okay; this is a thread-local variable, 每个线程有一个副本
+	std::lock_guard<std::mutex> lock(cout_mutex);
+	fprintf(stdout, "Rage counter for: %s : %d\n", thread_name.c_str(), rage); // : 2, 子线程中rage的值为2
+}
+ 
+} // namespace
+ 
+int test_thread_local_1()
+{
+	std::thread a(increase_rage, "a"), b(increase_rage, "b");
+ 
+	{
+		std::lock_guard<std::mutex> lock(cout_mutex);
+		fprintf(stdout, "Rage counter for main: %d\n", rage); // 1, 主线程中rage的值始终为1
+	}
+ 
+	a.join();
+	b.join();
+	return 0;
+}
+执行结果如下图所示：
+
+
+
+GitHub：https://github.com/fengbingchun/Messy_Test
