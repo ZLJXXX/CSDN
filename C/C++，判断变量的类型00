@@ -1,0 +1,194 @@
+C/C++，判断变量的类型
+
+置顶 程序员的一天 2020-09-29 17:12:49  2615  收藏 41
+文章标签： c语言 c++
+版权
+python用久了，c/c++也就慢慢还给老师了!
+
+在python中，利用type()函数，可以很方便的判断变量类型。但是在c/c++中，判断变量类型，却不简单…
+
+出于某个奇葩需求，简单研究了一下c/c++如何判断变量类型，整理总结在此，分享给大家，也避免自己以后绕弯。
+
+一、c++判断变量类型
+c++中，可以利用typeid()来判断变量类型。
+
+第一步：创建test.cpp文件，输入以下代码：
+
+#include<typeinfo>
+#include<iostream>
+using namespace std;
+ 
+int main()
+{
+    int i;
+    cout << typeid(i).name() << "\n";
+    //输出结果为i(表示int),即类型的名称首字母 
+    return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+第二步：利用g++编译test.cpp，生成可执行文件（默认为a.out）：
+
+[root@程序员的一天 c++]# ls
+test.cpp
+[root@程序员的一天 c++]# g++ test.cpp 
+[root@程序员的一天 c++]# ls
+a.out  test.cpp
+[root@程序员的一天 c++]# 
+1
+2
+3
+4
+5
+6
+第三步：执行a.out：
+
+[root@程序员的一天 c++]# ./a.out 
+i
+[root@程序员的一天 c++]#
+1
+2
+3
+tip：i表示int，即类型首字母。
+
+二、c语言判断变量类型
+c语言中，没有判断变量类型的函数！
+可能因为c语言每种类型占用空间都很明确，大概不需要这样的功能吧。
+
+如果确实需要判断，也有方法可行。方法比较鸡肋
+
+可以简单利用sizeof()或者ASCII码辅助判断。
+
+2.1、sizeof()判断
+表达式 sizeof()可以得到对象或类型的存储字节大小，但是不同操作系统可能存在差异。
+
+我们来简单测试一下int类型和char类型的1分别占位多少。
+第一步：创建test.c文件，并输入以下代码：
+
+#include<stdio.h>
+int main(){
+    int var;
+    char var_char;
+    var = 1;
+    var_char = '1';
+    printf("int类型1占位：%d\n",sizeof(var));
+    printf("char类型1占位：%d\n",sizeof(var_char));
+    return 0;
+}
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+第二步：利用gcc编译test.c文件（默认生成a.out文件）：
+
+[root@程序员的一天 c]# ls
+test.c
+[root@程序员的一天 c]# gcc test.c 
+[root@程序员的一天 c]# ls
+a.out  test.c
+[root@程序员的一天 c]# 
+
+1
+2
+3
+4
+5
+6
+7
+第三步：执行a.out：
+
+[root@程序员的一天 c]# ./a.out 
+int类型1占位：4
+char类型1占位：1
+[root@程序员的一天 c]# 
+
+1
+2
+3
+4
+5
+可以看到int类型变量占4个字节，char类型变量占1字节，从而判断出是int还是char。
+
+tip：如果是个char类型的字母a，还可以进一步利用类型转换来判断。数字字符可以强制转换为int等，字母字符转换会报错。
+
+2.2、ASCII码判断
+利用ASCII码，也可以简单判断类型。
+
+比如字符类型1输出ASCII码为49，int类型1，则直接输出1。
+
+简单测试如下：
+第一步：创建test.c文件，并输入以下代码：
+
+#include<stdio.h>
+int main(){
+    int var;
+    char var_char;
+    var = 1;
+    var_char = '1';
+    printf("int类型输出：%d\n",var);
+    printf("char类型输出ASCII码：%d\n",var_char);
+    return 0;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+第二步：利用gcc编译test.c文件（默认生成a.out文件）：
+
+[root@程序员的一天 c]# ls
+test.c
+[root@程序员的一天 c]# gcc test.c 
+[root@程序员的一天 c]# ls
+a.out  test.c
+[root@程序员的一天 c]# 
+
+1
+2
+3
+4
+5
+6
+7
+第三步：执行a.out：
+
+[root@程序员的一天 c]# ./a.out 
+int类型输出：1
+char类型输出ASCII码：49
+[root@程序员的一天 c]# 
+
+1
+2
+3
+4
+5
+tip：字符才有ASCII码，int类型数字会直接输出数字本身。
+
+到此，C/C++，判断变量的类型介绍完毕！
+END.
+
+我的部分文章会首发在公众号上。微信读者，可以搜一搜：【程序员的一天】，感兴趣的朋友可以关注，支持一下，谢谢！
+
+每一个关注、点赞，都是极大的支持和鼓励。最后，非常感谢阅读。
