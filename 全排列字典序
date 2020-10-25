@@ -1,0 +1,67 @@
+全排列字典序
+
+fighting QAQ 2020-10-25 14:31:42  收藏
+分类专栏： 每日一题 文章标签： 字符串 dfs
+编辑 版权
+全排列字典序
+【牛客剑指offer：字符串的排列】
+【本题解析】
+在这里插入图片描述
+【代码实现】
+
+class Solution {
+public:
+    void DFS(string& str,set<string>& res,int begin){
+        //边界条件
+        if(begin == str.size() - 1){
+            res.insert(str);
+        }
+        for(int i = begin;i < str.size();i++){
+            swap(str[begin],str[i]);
+            DFS(str,res,begin+1);
+            //回溯
+            swap(str[begin],str[i]);
+        }
+    }
+    vector<string> Permutation(string str) {
+        vector<string> result;
+        set<string> res;
+        if(str.size() == 0){
+            return result;
+        }
+        DFS(str,res,0);
+        for(auto& e : res){
+            result.push_back(e);
+        }
+        return result;
+    }
+};
+
+【类似题型LetCode：全排列】
+
+class Solution {
+public:
+    void dfs(vector<int>& nums,set<vector<int>>& res,int begin){
+        if(begin == nums.size() - 1){
+            res.insert(nums);
+        }
+        for(int i = begin;i < nums.size();i++){
+            swap(nums[begin],nums[i]);
+            dfs(nums,res,begin+1);
+            swap(nums[begin],nums[i]);
+        }
+    }
+    vector<vector<int>> permute(vector<int>& nums) {
+        vector<vector<int>> result;
+        if(nums.empty()){
+            return result;
+        }
+        //set去重
+        set<vector<int>> res;
+        dfs(nums,res,0);
+        for(auto& e : res){
+            result.push_back(e);
+        }
+        return result;
+    }
+};
