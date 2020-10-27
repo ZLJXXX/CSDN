@@ -1,0 +1,291 @@
+C++命令模式解析
+
+Giser_D 2020-09-14 10:16:42  1825  收藏 49
+分类专栏： C++
+版权
+命令模式定义：
+命令模式本质上，就是将命令的调用和执行分开，个人理解，简单的来说，就是每天起来列一天的计划任务，然后在白天的时候，把这些任务给做完，这个就是非常生活化的命令模式，易于理解/
+实际工作运用场景，
+在客户端游戏开发过程中，例如游戏中有自动寻路的功能，如果用户点了自动寻路，它在客户端内部的操作是 先将自动寻路的动作加入到命令当中，自动寻路里面有先找到目的地、规划路线、执行走条等一系列命令，这些通过设置命令的调用顺序，执行起来就特别方便，也是使用命令模式的一种方向。
+实例代码：
+//人的基类=-= 子类实现这些基操
+class IPerson{
+public:
+	virtual void Run() = 0;
+	virtual void Eating() = 0;
+	virtual void Sleeping() = 0;
+	virtual void Bash() = 0;
+};
+
+//执行人
+class CRunPerson:public IPerson{
+public:
+	virtual void Run()
+	{
+		cout << "执行跑步命令,很快" << endl;
+	}
+	virtual void Bash()
+	{
+		cout << "执行洗澡命令" << endl;
+	}
+	virtual void Sleeping()
+	{
+		cout << "执行睡觉命令" << endl;
+	}
+	virtual void Eating()
+	{
+		cout << "执行吃饭命令" << endl;
+	}
+};
+
+//执行人
+class CEatPerson:public IPerson{
+public:
+	virtual void Run()
+	{
+		cout << "执行跑步命令,很快" << endl;
+	}
+	virtual void Bash()
+	{
+		cout << "执行洗澡命令" << endl;
+	}
+	virtual void Sleeping()
+	{
+		cout << "执行睡觉命令" << endl;
+	}
+	virtual void Eating()
+	{
+		cout << "执行吃饭汉堡命令" << endl;
+	}
+};
+
+
+class ICommand{
+protected:
+	IPerson * m_pPerson;
+public:
+	ICommand(IPerson *p)
+	{
+		m_pPerson = p;
+	}
+	virtual void ExcuteCommand()=0;
+};
+
+class CommandRun:public ICommand{
+public:
+	CommandRun(IPerson*p):ICommand(p){};
+	void ExcuteCommand()
+	{
+		m_pPerson->Run();
+	}
+	
+};
+
+
+class CommandEat:public ICommand{
+public:
+	CommandEat(IPerson*p):ICommand(p){};
+	void ExcuteCommand()
+	{
+		m_pPerson->Eating();
+	}
+
+};
+
+class CommandBash:public ICommand{
+public:
+	CommandBash(IPerson*p):ICommand(p){};
+	void ExcuteCommand()
+	{
+		m_pPerson->Bash();
+	}
+};
+
+class CommandSleep:public ICommand{
+public:
+	CommandSleep(IPerson*p):ICommand(p){};
+	void ExcuteCommand()
+	{
+		m_pPerson->Sleeping();
+	}
+};
+
+//调用者
+class CCaller{
+private:
+	vector<ICommand*> m_vecCommand;
+public:
+	void AddCommand(ICommand* iCommand)
+	{
+		m_vecCommand.push_back(iCommand);
+	}
+	void RunCommand()
+	{
+		for (auto it = m_vecCommand.begin();it != m_vecCommand.end();it++)
+		{
+			(*it)->ExcuteCommand();
+		}
+	}
+	void ReleaseCommand()
+	{
+		for (auto it = m_vecCommand.begin();it != m_vecCommand.end();it++)
+		{
+			delete *it;
+			*it = nullptr;
+		}
+	}
+
+};
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+	CEatPerson * eat_ = new CEatPerson();
+	CRunPerson * rp = new CRunPerson();
+	CCaller mp;
+	mp.AddCommand(new CommandEat(eat_));
+	mp.AddCommand(new CommandRun(rp));
+	mp.AddCommand(new CommandBash(eat_));
+	mp.RunCommand();
+	mp.ReleaseCommand();
+1
+2
+3
+4
+5
+6
+7
+8
+运行结果
+在这里插入图片描述
+
+Giser_D
+
+C/C++
+https://github.com/huifeng-kooboo编程爱好者，喜欢学习客户端技术和网站后端技术、对爬虫技术颇有研究
