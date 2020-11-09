@@ -1,0 +1,174 @@
+Java：定义一个未知点，判断未知点是否在圆内。如果在圆内，输出true，否则输出false。
+
+宏远小七 2020-11-08 13:05:15  523  收藏 6
+分类专栏： 类和对象 文章标签： java
+版权
+Java：定义一个未知点，判断未知点是否在圆内。如果在圆内，输出true，否则输出false。
+题目要求
+设计思路
+代码
+点类
+圆类
+圆类方法
+运行结果
+题目要求
+在这里插入图片描述
+
+设计思路
+设计思路根据题目要求：
+1.设计一个类代表二维空间的一个点；
+2.设计一个类代表二维空间的一个圆；
+3.计算点与圆的关系。
+
+代码
+点类
+package cricle;
+public class Point {//定义圆心
+	private double x;
+	private double y;
+public Point(double x,double y) {//定义一个未知点坐标
+	this.x=x;
+	this.y=y;
+}
+public double getx() {
+	return x;
+}
+public void setx(double x) {
+	this.x=x;
+}
+public double gety() {
+	return y;
+}
+public void sety(double y) {
+	this.y=y;
+}
+public double distance(Point dot) {//点到圆心的距离公式
+	return Math.sqrt(Math.pow(x-dot.x, 2))+Math.pow(y-dot.y, 2);
+}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+圆类
+package cricle;
+public class Cricle {
+	private double radius;//圆的半径
+	private Point center;//圆心
+	
+	public Cricle(double r) {
+		radius=r;
+	}
+	public double area(){//计算面积的方法
+		return Math.PI*radius*radius;
+	}
+	public Cricle(double radius,Point center) {
+		this.radius=radius;
+		this.center=center;
+	}
+	public double girth() {//计算周长的方法
+		return 2*Math.PI*radius;
+	}
+	public double getRadius() {
+		return radius;
+	}
+	public double setRadius(double radius) {
+		return this.radius=radius;
+	}
+	public Point getCenter() {
+		return center;
+	}
+	public Point setCenter(Point center) {
+		return this.center=center;
+	}
+	public boolean isCricleIn(Point posion) {//判断点是否在圆内
+		if(center.distance(posion)<=radius) 
+			return true;
+			else 
+				return false;
+	}
+}
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+圆类方法
+package cricle;
+public class TestCricle {
+	public static void main(String[] args) {
+		Cricle cl=new Cricle(2,new Point(1,1)) ;//确定半径和圆心	
+		Point pl=new Point(2,2);//确定未知点的坐标
+		boolean bl=cl.isCricleIn(pl);
+		System.out.println(bl);
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+圆心和圆的半径，以及未知点的坐标可以在方法类中修改。
+
+运行结果
+在这里插入图片描述
+在这里插入图片描述
+如果写得不清楚的欢迎评论区交流；有可以优化的地方欢迎大佬指教指教。
