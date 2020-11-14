@@ -1,0 +1,867 @@
+Java写的第一个小游戏
+
+Dimor1 2020-11-10 15:25:31  4784  收藏 66
+分类专栏： 游戏 文章标签： java
+版权
+实现思路
+1.如何分析？
+第一步:发现类(对象)
+人物-小丑(敌方-友方)
+子弹-帽子
+墙体
+爆炸物
+1
+2
+3
+4
+第二步:发现属性
+小丑:  宽高 , 位置(x y), 移动速度
+帽子:  宽高 , 位置(x y), 移动速度
+墙体:  宽高 , 位置(x y)
+爆炸物:宽高 , 位置(x y)
+1
+2
+3
+4
+第三步:发现方法
+小丑:     移动 , 攻击 , 人物撞边界 ,
+子弹:     移动 , 子弹撞墙 , 子弹撞边界 ,
+墙体:     静止不动
+爆炸物:   爆炸物消失
+1
+2
+3
+4
+2.难点在哪里?
+1 如何将图片加载到窗体里
+
+背景图片加载
+人物-小丑加载
+发射物-帽子加载 Missile
+墙体-加载 Wall
+爆炸物-加载 Explode
+2 如何创建窗体
+
+3 如何发射子弹(如何使用键盘触发事件)
+
+3.二期版本
+接入网络,多人作战
+第一天的实现
+1.创建一个项目(ylm)
+2.导入需要使用到的图片文件到Java
+3.在项目的src(源代码)中创建游戏包(com.ytzl.ylm)
+4.在游戏包(com.ytzl.ylm)下创建客户端类GameClient并继承Farme类
+public class GameClient extends Frame {}
+关于Farme类:
+1.Farme类是Java自带的一个系统类
+2.Farme类的作用是可以制作出带有标题和边框的顶层窗口
+
+5.实现游戏窗口的显示
+public void start(){
+    //启动游戏时在控制台输出显示"游戏开始"
+    System.out.println("游戏开始");
+    //窗口的标题设置
+    this.setTitle("原谅帽带战");
+    /*
+     *窗体的大小以及位置设置——调用Frame类中的setBounds方法
+     * setBounds方法具体内容:setBounds(int横坐标，int纵坐标，int长，int宽);
+     * 参数中横纵坐标为0，表示窗口从计算机屏幕左上角开始铺开显示(窗口中心点)
+     */
+    this.setBounds(0,0,700,500);
+    //让窗体显示出来
+    this.setVisible(true);
+    //点击窗口x关闭键响应关闭
+    this.addWindowListener(new WindowAdapter() {
+        @Override
+        public void windowClosing(WindowEvent windowEvent) {
+            //退出游戏后在控制台输出显示"游戏结束"
+            System.out.println("游戏结束");
+            //调用System类中的exit方法以实现窗口关闭按钮(X)的生效
+            System.exit(0);
+        }
+    });
+}
+//游戏入口
+public static void main(String[] args) {
+    // 创建本类对象
+    GameClient gameClient = new GameClient();
+    // 使用本类对象调用start方法，开始游戏
+    gameClient.start();
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+6.给窗体添加背景图片
+6.1在com.ytzl.ylm包下创建工具包util并且创建工具类CommonUtils
+6.2在工具类(CommonUtils)中写读取图片的方法
+public class CommonUtils {
+    //读取图片方法getImage
+    public static Image getImage(String imgPath) {
+        //参数为图片路径地址
+        ImageIcon imageIcon = new ImageIcon(imgPath);
+        return imageIcon.getImage();
+    }
+}
+1
+2
+3
+4
+5
+6
+7
+6.3在客户端类中完成背景图片的插入
+// 将背景图片的路径赋值给常量BG_PATH
+public static final String BG_PATH = "images/bg.png";
+// 定义一个图片的静态变量(用于插入不同图片)
+private static Image image;
+// 背景图静态块,调用背景图片路径,所有资源(背景图片,音频,视频)只需要加载一次
+static {
+    image = CommonUtils.getImage(BG_PATH);
+}
+//重写父类Frame类的paint方法以插入各种图片
+@Override
+public void paint(Graphics g){
+    //插入背景图定义位置和宽 高
+    g.drawImage(image,0,0,700,500,this);
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+插入人物-帽子-爆炸物-障碍物图片在com.ytzl.ylm包下创建需要插入的图片包entity
+7.实现人物的显示
+7.1在图片包(entity)下创建角色类Buffoon,定义角色属性和方法
+定义角色属性
+// 人物图片路径属性
+public static final Image buffoonImage = CommonUtils.getImage("images/body/s-left.png");
+// 人物-横坐标
+private int x;
+// 人物-纵坐标
+private int y;
+// 图片-宽度
+private int width;
+// 图片-高度
+private int height;
+// 人物-速度
+private int speed;
+// 人物-方向
+private String dir;
+//游戏窗体属性 因为小丑要在窗体中显示
+private GameClient gameClient;
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+定义无参带参构造以给角色的属性赋值
+//无参构造
+public Buffoon() {
+
+}
+//带参构造
+public Buffoon(int x, int y, GameClient gameClient) {
+    this.x = x;
+    this.y = y;
+    this.width = 50;
+    this.height = 50;
+    this.speed = 3;
+    this.dir = "STOP";// 人物刚创建时为静止状态
+    this.gameClient = gameClient;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+定义角色方法
+//插入角色图方法
+public void paint(Graphics g){
+    g.drawImage(buffoonImage,this.x,this.y,this.width,this.height,this.gameClient);
+}
+//生成get set 方法
+public int getX() {
+    return x;
+}
+
+public void setX(int x) {
+    this.x = x;
+}
+
+public int getY() {
+    return y;
+}
+
+public void setY(int y) {
+    this.y = y;
+}
+
+public int getWidth() {
+    return width;
+}
+
+public void setWidth(int width) {
+    this.width = width;
+}
+
+public int getHeight() {
+    return height;
+}
+
+public void setHeight(int height) {
+    this.height = height;
+}
+
+public int getSpeed() {
+    return speed;
+}
+
+public void setSpeed(int speed) {
+    this.speed = speed;
+}
+
+public String getDir() {
+    return dir;
+}
+
+public void setDir(String dir) {
+    this.dir = dir;
+}
+public GameClient getGameClient() {
+    return gameClient;
+}
+
+public void setGameClient(GameClient gameClient) {
+    this.gameClient = gameClient;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+7.2在客户端中实现插入人物图
+// 创建人物-小丑,在参数中定义位置
+private Buffoon buffoon = new Buffoon(200,200,this);
+//重写父类Frame类的paint方法以插入各种图片
+@Override
+public void paint(Graphics g){
+    //用角色-小丑调用paint方法以给图片宽 高 速度
+    buffoon.paint(g);
+}
+1
+2
+3
+4
+5
+6
+7
+8.实现发射物的显示
+8.1在图片包(entity)下创建发射物类Missile,定义发射物属性和方法
+定义发射物-帽子的属性
+//发射物图片路径属性
+public static final Image missileImage = CommonUtils.getImage("images/missile.png");
+// 帽子-高度
+private int height;
+// 帽子-长度
+private int width;
+// 帽子-速度
+private int speed;
+// 帽子-横坐标
+private int x;
+// 帽子-纵坐标
+private int y;
+//游戏窗体属性 因为帽子要在窗体中显示
+private GameClient gameClient;
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+定义无参带参构造给帽子的属性赋值
+//无参构造
+public Missile(){
+
+}
+//带参构造
+public Missile(int x,int y,GameClient gameClient){
+    this.x=x;
+    this.y=y;
+    this.width=20;
+    this.height=20;
+    this.speed=10;
+    this.gameClient=gameClient;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+定义帽子的方法
+//插入帽子图片的方法
+public void paint(Graphics g){
+	g.drawImage(missileImage,this.x,this.y,this.width,this.height,this.gameClient);
+}
+//setget方法
+public int getHeight() {
+    return height;
+}
+
+public void setHeight(int height) {
+    this.height = height;
+}
+
+public int getWidth() {
+    return width;
+}
+
+public void setWidth(int width) {
+    this.width = width;
+}
+
+public int getSpeed() {
+    return speed;
+}
+
+public void setSpeed(int speed) {
+    this.speed = speed;
+}
+
+public int getX() {
+    return x;
+}
+
+public void setX(int x) {
+    this.x = x;
+}
+
+public int getY() {
+    return y;
+}
+
+public void setY(int y) {
+    this.y = y;
+}
+
+public GameClient getGameClient() {
+    return gameClient;
+}
+
+public void setGameClient(GameClient gameClient) {
+    this.gameClient = gameClient;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+8.2在客户端中实现插入帽子图
+// 创建发射物-帽子(missile),在参数中定义位置
+private Missile missile = new Missile(300,300,this);
+//重写父类Frame类的paint方法以插入各种图片
+@Override
+public void paint(Graphics g){
+    //用发射物-帽子调用paint方法以给图片宽 高 速度
+    missile.paint(g);
+}
+1
+2
+3
+4
+5
+6
+7
+9.实现爆炸物的显示
+9.1在图片包(entity)下创建爆炸物类(Explode),定义爆炸物属性和方法
+定义爆炸物属性
+//爆炸物图片路径属性
+public static final Image explodeImage = CommonUtils.getImage("images/explode.png");
+//爆炸物-高度
+private int height;
+//爆炸物-长度
+private int width;
+//爆炸物-横坐标
+private int x;
+//爆炸物-纵坐标
+private int y;
+//爆炸物窗体属性 因为帽子要在窗体中显示
+private GameClient gameClient;
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+定义无参带参构造给爆炸物的属性赋值
+//无参构造
+public Explode(){
+
+}
+//带参构造
+public Explode(int x,int y,GameClient gameClient){
+    this.x=x;
+    this.y=y;
+    this.width=30;
+    this.height=70;
+    this.gameClient=gameClient;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+定义帽子的方法
+//插入角色图方法
+public void paint(Graphics g){
+    g.drawImage(explodeImage,x,y,this.width,this.height,this.gameClient);
+}
+//生成get set方法
+public int getHeight() {
+    return height;
+}
+
+public void setHeight(int height) {
+    this.height = height;
+}
+
+public int getWidth() {
+    return width;
+}
+
+public void setWidth(int width) {
+    this.width = width;
+}
+
+public int getX() {
+    return x;
+}
+
+public void setX(int x) {
+    this.x = x;
+}
+
+public int getY() {
+    return y;
+}
+
+public void setY(int y) {
+    this.y = y;
+}
+
+public GameClient getGameClient() {
+    return gameClient;
+}
+
+public void setGameClient(GameClient gameClient) {
+    this.gameClient = gameClient;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+9.2在客户端中实现插入爆炸物图
+// 创建发射物-爆炸物(explode),在参数中定义位置
+private Explode explode = new Explode(300,100,this);
+//重写父类Frame类的paint方法以插入各种图片
+@Override
+public void paint(Graphics g){
+    //用爆炸物调用paint方法以给图片宽 高
+    explode.paint(g);
+}
+1
+2
+3
+4
+5
+6
+7
+10.实现墙体的显示
+10.1在图片包(entity)下创建障碍物类(Wall),定义障碍物属性和方法
+定义障碍物属性
+//墙体图片属性
+public static final Image wallImageZ = CommonUtils.getImage("images/wall-v.png");
+//墙体-高度
+private int height;
+//墙体-长度
+private int width;
+//墙体-横坐标
+private int x;
+//墙体-纵坐标
+private int y;
+//游戏窗体属性 因为墙要在窗体中显示
+private GameClient gameClient;
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+定义无参带参构造给障碍物的属性赋值
+//无参构造
+public Wall(){
+
+}
+//带参构造
+public Wall(int x,int y,GameClient gameClient){
+    this.x=x;
+    this.y=y;
+    this.width=30;
+    this.height=70;
+    this.gameClient=gameClient;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+定义障碍物的方法
+//插入墙体图片的方法
+public void paint(Graphics g){
+    g.drawImage(wallImageZ,this.x,this.y,this.width,this.height,this.gameClient);
+}
+//生成get set 方法
+public int getHeight() {
+    return height;
+}
+
+public void setHeight(int height) {
+    this.height = height;
+}
+
+public int getWidth() {
+    return width;
+}
+
+public void setWidth(int width) {
+    this.width = width;
+}
+
+public int getX() {
+    return x;
+}
+
+public void setX(int x) {
+    this.x = x;
+}
+
+public int getY() {
+    return y;
+}
+
+public void setY(int y) {
+    this.y = y;
+}
+
+public GameClient getGameClient() {
+    return gameClient;
+}
+
+public void setGameClient(GameClient gameClient) {
+    this.gameClient = gameClient;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+10.2在客户端中实现插入障碍物图
+// 创建墙体(wall),在参数中定义位置
+private Wall wall=new Wall(500,200,this);
+1
+第一天(完成)效果图如下:在这里插入图片描述
+第二天(人物以及帽子移动方向)
+public void move(String dir){
+    if("U".equals(dir)){
+        this.y-=this.speed;
+    }
+    if("R".equals(dir)){
+        this.x+=this.speed;
+    }
+    if("D".equals(dir)){
+        this.y+=this.speed;
+    }
+    if ("L".equals(dir)){
+        this.x-=this.speed;
+    }
+    if ("UR".equals(dir)){
+        this.x+=this.speed;
+        this.y-=this.speed;
+    }
+    if ("DR".equals(dir)){
+        this.x+=this.speed;
+        this.y+=this.speed;
+    }
+    if ("LD".equals(dir)){
+        this.x-=this.speed;
+        this.y+=this.speed;
+    }
+    if ("LU".equals(dir)){
+        this.x-=this.speed;
+        this.y-=this.speed;
+    }
+}
