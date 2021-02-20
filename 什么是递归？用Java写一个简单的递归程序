@@ -1,0 +1,117 @@
+什么是递归？用Java写一个简单的递归程序
+
+小明 2021-02-17 16:06:15  1680  收藏 10
+分类专栏： Java算法 文章标签： java 算法
+版权
+什么是递归？用Java写一个简单的递归程序
+递归的定义
+递归（recursion）：以此类推是递归的基本思想，将规模大的问题转化为规模小的问题来解决。
+
+递归的要素
+自定义递归函数，并确定函数的基本功能
+例如Java从键盘输入一个数，求输入这个数的阶乘。这个时候把输入的数字作为形参
+int diGuiTest(int n ){
+
+}
+1
+2
+3
+找到递归函数循环结束条件
+在求阶乘的时候，我们不妨做出如下思考，例如输入的n是5，那么5！是5 * 4 3 * 2 * 1，那是不是可以写成
+n f(n-1)?,程序运行过程如下：
+5* f(4)
+f(4)相当于重新调用了函数，形参为4
+5 * 4* f(n-1)
+f(3)相当于重新调用了函数，形参为3
+5 * 4* 3* f(n-1)
+f(2)相当于重新调用了函数，形参为2
+5 * 4* 3 * 2* f(n-1)
+f(1)相当于重新调用了函数，形参为1
+很容易发现，这时候如果递归调用到n为1的时候，就要结束调用自身
+代码如下：
+int diGuiTest(int n ){
+if(n==1){
+return 1;
+}
+else{
+return n*f(n-1);
+}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+代码示例
+求1–100之间所有自然数的和
+int sum (int n ){
+if(n==1){
+return 1 ;
+}
+else{
+return n+sum(n-1);
+}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+斐波拉契数列
+斐波那契数列（Fibonacci sequence），又称黄金分割数列，因数学家莱昂纳多·斐波那契（Leonardoda Fibonacci）以兔子繁殖为例子而引入，故又称为“兔子数列”，指的是这样一个数列：0、1、1、2、3、5、8、13、21、34、……在数学上，斐波那契数列以如下被以递推的方法定义：F(0)=0，F(1)=1, F(n)=F(n - 1)+F(n - 2) （n ≥ 2，n ∈ N*）
+
+int fibonacci(int n ){
+
+if (n<=1){
+return n;
+}
+else {
+return fibonacci(n-1)+fibonacci(n-2);
+}
+
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+汉诺塔问题
+在这里插入图片描述
+首先我们考虑最简单的情况：
+在这里插入图片描述
+将最上面的一块放到B，再将最下面一块放到C，再把最上面一块从B放到C即可
+在这里插入图片描述
+
+public class Hanio {
+    public static void main(String[] args) {
+        char A='A';
+        char B='B';
+        char C='C';
+        hannio(3,A,B,C);
+    }
+    static   void hannio(int paltfrom,char A,char B, char C){
+        if (paltfrom==1){
+            move (A,C);
+        }else {
+            hannio(paltfrom-1,A,C,B);//上面两个盘子，通过C柱到B柱
+            move (A,C);
+            hannio(paltfrom-1,B,A,C);//
+        }
+    }
+    static   void move(char A,char B){
+        System.out.println(A+"---->"+B);
+    }
+
+}
